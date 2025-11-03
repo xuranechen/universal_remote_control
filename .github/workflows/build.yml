@@ -30,15 +30,12 @@ jobs:
       
       - name: 添加Windows桌面支持
         run: flutter create --platforms=windows .
-        working-directory: universal_remote_control
       
       - name: 获取依赖
         run: flutter pub get
-        working-directory: universal_remote_control
       
       - name: 运行代码生成
         run: flutter pub run build_runner build --delete-conflicting-outputs
-        working-directory: universal_remote_control
       
       - name: 设置Visual Studio环境
         uses: microsoft/setup-msbuild@v1.1
@@ -51,7 +48,6 @@ jobs:
           cmake .. -A x64
           cmake --build . --config Release
           cd ../../..
-        working-directory: universal_remote_control
         shell: cmd
       
       - name: 复制原生库到项目根目录
@@ -62,12 +58,10 @@ jobs:
           } else {
             Write-Host "警告: 未找到 input_simulator_windows.dll"
           }
-        working-directory: universal_remote_control
         shell: pwsh
       
       - name: 构建Windows应用
         run: flutter build windows --release
-        working-directory: universal_remote_control
       
       - name: 创建发布包
         run: |
@@ -81,14 +75,13 @@ jobs:
             Copy-Item "QUICKSTART.md" -Destination $releaseDir
           }
           Write-Host "发布包创建完成: $releaseDir"
-        working-directory: universal_remote_control
         shell: pwsh
       
       - name: 上传构建产物
         uses: actions/upload-artifact@v4
         with:
           name: windows-build
-          path: universal_remote_control/release_windows/
+          path: release_windows/
           retention-days: 7
 
   build-linux:
@@ -118,15 +111,12 @@ jobs:
       
       - name: 添加Linux桌面支持
         run: flutter create --platforms=linux .
-        working-directory: universal_remote_control
       
       - name: 获取依赖
         run: flutter pub get
-        working-directory: universal_remote_control
       
       - name: 运行代码生成
         run: flutter pub run build_runner build --delete-conflicting-outputs
-        working-directory: universal_remote_control
       
       - name: 编译Linux原生库
         run: |
@@ -136,7 +126,6 @@ jobs:
           cmake ..
           cmake --build . --config Release
           cd ../../..
-        working-directory: universal_remote_control
       
       - name: 复制原生库到项目根目录
         run: |
@@ -146,11 +135,9 @@ jobs:
           else
             echo "警告: 未找到 libinput_simulator_linux.so"
           fi
-        working-directory: universal_remote_control
       
       - name: 构建Linux应用
         run: flutter build linux --release
-        working-directory: universal_remote_control
       
       - name: 创建发布包
         run: |
@@ -159,13 +146,12 @@ jobs:
           [ -f README.md ] && cp README.md release_linux/
           [ -f QUICKSTART.md ] && cp QUICKSTART.md release_linux/
           echo "发布包创建完成: release_linux"
-        working-directory: universal_remote_control
       
       - name: 上传构建产物
         uses: actions/upload-artifact@v4
         with:
           name: linux-build
-          path: universal_remote_control/release_linux/
+          path: release_linux/
           retention-days: 7
 
   build-macos:
@@ -190,15 +176,12 @@ jobs:
       
       - name: 添加macOS桌面支持
         run: flutter create --platforms=macos .
-        working-directory: universal_remote_control
       
       - name: 获取依赖
         run: flutter pub get
-        working-directory: universal_remote_control
       
       - name: 运行代码生成
         run: flutter pub run build_runner build --delete-conflicting-outputs
-        working-directory: universal_remote_control
       
       - name: 编译macOS原生库
         run: |
@@ -208,7 +191,6 @@ jobs:
           cmake ..
           cmake --build . --config Release
           cd ../../..
-        working-directory: universal_remote_control
       
       - name: 复制原生库到项目根目录
         run: |
@@ -218,11 +200,9 @@ jobs:
           else
             echo "警告: 未找到 libinput_simulator_macos.dylib"
           fi
-        working-directory: universal_remote_control
       
       - name: 构建macOS应用
         run: flutter build macos --release
-        working-directory: universal_remote_control
       
       - name: 创建发布包
         run: |
@@ -231,13 +211,12 @@ jobs:
           [ -f README.md ] && cp README.md release_macos/
           [ -f QUICKSTART.md ] && cp QUICKSTART.md release_macos/
           echo "发布包创建完成: release_macos"
-        working-directory: universal_remote_control
       
       - name: 上传构建产物
         uses: actions/upload-artifact@v4
         with:
           name: macos-build
-          path: universal_remote_control/release_macos/
+          path: release_macos/
           retention-days: 7
 
   build-android:
@@ -268,39 +247,34 @@ jobs:
       
       - name: 获取依赖
         run: flutter pub get
-        working-directory: universal_remote_control
       
       - name: 运行代码生成
         run: flutter pub run build_runner build --delete-conflicting-outputs
-        working-directory: universal_remote_control
       
       - name: 构建APK
         run: flutter build apk --release
-        working-directory: universal_remote_control
       
       - name: 构建App Bundle
         run: flutter build appbundle --release
-        working-directory: universal_remote_control
       
       - name: 重命名APK
         run: |
           mkdir -p release_android
           cp build/app/outputs/flutter-apk/app-release.apk release_android/universal_remote_control.apk
           echo "APK已创建: release_android/universal_remote_control.apk"
-        working-directory: universal_remote_control
       
       - name: 上传APK
         uses: actions/upload-artifact@v4
         with:
           name: android-apk
-          path: universal_remote_control/release_android/universal_remote_control.apk
+          path: release_android/universal_remote_control.apk
           retention-days: 7
       
       - name: 上传App Bundle
         uses: actions/upload-artifact@v4
         with:
           name: android-bundle
-          path: universal_remote_control/build/app/outputs/bundle/release/app-release.aab
+          path: build/app/outputs/bundle/release/app-release.aab
           retention-days: 7
 
   build-summary:
