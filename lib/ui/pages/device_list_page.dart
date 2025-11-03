@@ -511,104 +511,105 @@ class _DeviceListPageState extends State<DeviceListPage> {
         child: InkWell(
           onTap: () => _connectToDevice(device),
           borderRadius: BorderRadius.circular(16),
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Theme.of(context).colorScheme.primaryContainer.withOpacity(0.1),
-                Theme.of(context).colorScheme.surface,
-              ],
-            ),
-          ),
-          child: Row(
-            children: [
-              // 设备图标
-              Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  color: _getDeviceColor(device.type).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Icon(
-                  _getDeviceIcon(device.type),
-                  color: _getDeviceColor(device.type),
-                  size: 28,
-                ),
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Theme.of(context).colorScheme.primaryContainer.withOpacity(0.1),
+                  Theme.of(context).colorScheme.surface,
+                ],
               ),
-              const SizedBox(width: 16),
-              
-              // 设备信息
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      device.name,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.computer,
-                          size: 14,
-                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+            ),
+            child: Row(
+              children: [
+                // 设备图标
+                Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    color: _getDeviceColor(device.type).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Icon(
+                    _getDeviceIcon(device.type),
+                    color: _getDeviceColor(device.type),
+                    size: 28,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                
+                // 设备信息
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        device.name,
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
                         ),
-                        const SizedBox(width: 4),
-                        Text(
-                          _getDeviceTypeName(device.type),
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.computer,
+                            size: 14,
                             color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                           ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.wifi,
-                          size: 14,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          device.ip,
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Theme.of(context).colorScheme.primary,
-                            fontWeight: FontWeight.w500,
+                          const SizedBox(width: 4),
+                          Text(
+                            _getDeviceTypeName(device.type),
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
-                  ],
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.wifi,
+                            size: 14,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            device.ip,
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Theme.of(context).colorScheme.primary,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              
-              // 连接按钮
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
+                
+                // 连接按钮
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    Icons.arrow_forward_ios,
+                    size: 16,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
                 ),
-                child: Icon(
-                  Icons.arrow_forward_ios,
-                  size: 16,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
