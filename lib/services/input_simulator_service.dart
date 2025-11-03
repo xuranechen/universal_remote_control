@@ -49,7 +49,28 @@ class InputSimulatorService {
   Future<void> _initializeDesktopLibrary() async {
     try {
       if (Platform.isWindows) {
-        _nativeLib = ffi.DynamicLibrary.open('input_simulator_windows.dll');
+        // 尝试在多个可能的位置加载 DLL
+        final candidates = <String>[
+          'input_simulator_windows.dll',
+          // 项目源代码目录（调试运行时）
+          '${Directory.current.path}\\windows\\runner\\input_simulator_windows.dll',
+          // Flutter Windows Debug/Release 产物目录
+          '${Directory.current.path}\\build\\windows\\runner\\Debug\\input_simulator_windows.dll',
+          '${Directory.current.path}\\build\\windows\\runner\\Release\\input_simulator_windows.dll',
+        ];
+        ffi.DynamicLibrary? loaded;
+        for (final path in candidates) {
+          try {
+            if (File(path).existsSync() || path == 'input_simulator_windows.dll') {
+              loaded = ffi.DynamicLibrary.open(path);
+              _logger.i('已加载Windows动态库: $path');
+              break;
+            }
+          } catch (_) {
+            // 继续尝试下一个路径
+          }
+        }
+        _nativeLib = loaded ?? ffi.DynamicLibrary.open('input_simulator_windows.dll');
       } else if (Platform.isLinux) {
         _nativeLib = ffi.DynamicLibrary.open('libinput_simulator_linux.so');
       } else if (Platform.isMacOS) {

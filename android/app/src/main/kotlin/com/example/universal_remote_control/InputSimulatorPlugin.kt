@@ -19,7 +19,7 @@ class InputSimulatorPlugin : FlutterPlugin, MethodCallHandler {
     
     companion object {
         private const val TAG = "InputSimulatorPlugin"
-        private const val CHANNEL_NAME = "com.example.universal_remote_control/input_simulator"
+        private const val CHANNEL_NAME = "com.example.universal_remote_control/input"
         
         // 静态方法供MainActivity使用
         private var pluginInstance: InputSimulatorPlugin? = null
@@ -68,6 +68,21 @@ class InputSimulatorPlugin : FlutterPlugin, MethodCallHandler {
     override fun onMethodCall(call: MethodCall, result: Result) {
         try {
             when (call.method) {
+                // Flutter 初始化调用
+                "initialize" -> {
+                    // 不做耗时操作，仅返回当前可用状态
+                    result.success(true)
+                }
+
+                // 与 Flutter 侧命名一致的检查/请求无障碍
+                "checkAccessibilityService" -> {
+                    result.success(isAccessibilityServiceEnabled())
+                }
+                "requestAccessibilityService" -> {
+                    openAccessibilitySettings()
+                    result.success(true)
+                }
+
                 "isServiceEnabled" -> {
                     result.success(isAccessibilityServiceEnabled())
                 }
@@ -84,6 +99,18 @@ class InputSimulatorPlugin : FlutterPlugin, MethodCallHandler {
                     
                     val success = performClick(x, y, duration)
                     result.success(success)
+                }
+                // Flutter 侧 mouseClick 事件：此处在当前光标位置执行一次点击
+                "mouseClick" -> {
+                    val service = RemoteControlAccessibilityService.getInstance()
+                    if (service == null) {
+                        Log.w(TAG, "无障碍服务未启用")
+                        result.success(false)
+                    } else {
+                        val pos = service.getCursorPosition()
+                        val success = service.performClick(pos.first, pos.second, 100)
+                        result.success(success)
+                    }
                 }
                 
                 "performSwipe" -> {
@@ -121,7 +148,8 @@ class InputSimulatorPlugin : FlutterPlugin, MethodCallHandler {
                     result.success(success)
                 }
                 
-                "simulateMouseMove" -> {
+                // 兼容旧名与 Flutter 事件名
+                "simulateMouseMove", "mouseMove" -> {
                     val dx = call.argument<Double>("dx")?.toFloat() ?: 0f
                     val dy = call.argument<Double>("dy")?.toFloat() ?: 0f
                     
@@ -132,6 +160,30 @@ class InputSimulatorPlugin : FlutterPlugin, MethodCallHandler {
                 "getCursorPosition" -> {
                     val position = getCursorPosition()
                     result.success(mapOf("x" to position.first, "y" to position.second))
+                }
+
+                // 占位：滚轮、键盘、触摸（简单实现或暂未实现）
+                "mouseScroll" -> {
+                    // Android 端通过无障碍不直接支持滚轮，这里暂返回成功以避免前端报错
+                    result.success(true)
+                }
+                "keyboard" -> {
+                    Log.w(TAG, "keyboard 输入暂未实现")
+                    result.success(false)
+                }
+                "touch" -> {
+                    val x = call.argument<Double>("x")?.toFloat() ?: 0f
+                    val y = call.argument<Double>("y")?.toFloat() ?: 0f
+                    val action = call.argument<String>("action") ?: "tap"
+                    val success = when (action) {
+                        "tap", "down", "up" -> performClick(x, y, 100)
+                        else -> performClick(x, y, 100)
+                    }
+                    result.success(success)
+                }
+                "getScreenSize" -> {
+                    val dm = context.resources.displayMetrics
+                    result.success(mapOf("width" to dm.widthPixels, "height" to dm.heightPixels))
                 }
                 
                 else -> {

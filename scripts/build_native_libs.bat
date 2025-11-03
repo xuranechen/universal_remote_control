@@ -49,6 +49,7 @@ if exist "Release\input_simulator_windows.dll" (
     echo 复制DLL文件...
     copy "Release\input_simulator_windows.dll" "..\..\windows\runner\" >nul
     copy "Release\input_simulator_windows.dll" "..\..\build\windows\runner\Release\" >nul 2>&1
+    copy "Release\input_simulator_windows.dll" "..\..\build\windows\runner\Debug\" >nul 2>&1
     echo 构建成功！DLL已复制到Flutter项目。
 ) else (
     echo 警告: 未找到生成的DLL文件
