@@ -150,7 +150,7 @@ cd native/windows
 mkdir build && cd build
 cmake ..
 cmake --build . --config Release
-copy Release\input_simulator_windows.dll ..\..\..
+copy bin\Release\input_simulator_windows.dll ..\..\..
 ```
 
 **Linux:**
@@ -159,7 +159,7 @@ cd native/linux
 mkdir build && cd build
 cmake ..
 make
-cp libinput_simulator_linux.so ../../..
+cp lib/libinput_simulator_linux.so ../../..
 ```
 
 **macOS:**
@@ -168,7 +168,7 @@ cd native/macos
 mkdir build && cd build
 cmake ..
 make
-cp libinput_simulator_macos.dylib ../../..
+cp lib/libinput_simulator_macos.dylib ../../..
 ```
 
 #### 运行项目

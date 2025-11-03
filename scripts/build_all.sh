@@ -68,7 +68,7 @@ cmake ..
 make -j$(nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 4)
 
 # 复制库文件到项目根目录
-cp $LIB_NAME ../../..
+cp lib/$LIB_NAME ../../..
 cd ../../..
 echo ""
 

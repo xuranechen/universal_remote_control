@@ -82,7 +82,7 @@ flutter pub run build_runner build --delete-conflicting-outputs
 cd native/windows
 mkdir build && cd build
 cmake .. && cmake --build . --config Release
-copy Release\input_simulator_windows.dll ..\..\..
+copy bin\Release\input_simulator_windows.dll ..\..\..
 ```
 
 **Linux:**
@@ -90,7 +90,7 @@ copy Release\input_simulator_windows.dll ..\..\..
 cd native/linux
 mkdir build && cd build
 cmake .. && make
-cp libinput_simulator_linux.so ../../..
+cp lib/libinput_simulator_linux.so ../../..
 ```
 
 **macOS:**
@@ -98,7 +98,7 @@ cp libinput_simulator_linux.so ../../..
 cd native/macos
 mkdir build && cd build
 cmake .. && make
-cp libinput_simulator_macos.dylib ../../..
+cp lib/libinput_simulator_macos.dylib ../../..
 ```
 
 **Android:**

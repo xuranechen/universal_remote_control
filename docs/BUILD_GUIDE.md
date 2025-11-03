@@ -96,7 +96,7 @@ cmake ..
 cmake --build . --config Release
 
 # 复制DLL到Flutter项目根目录
-copy Release\input_simulator_windows.dll ..\..\..
+copy bin\Release\input_simulator_windows.dll ..\..\..
 ```
 
 ### Linux
@@ -108,7 +108,7 @@ cmake ..
 make
 
 # 复制.so到Flutter项目根目录
-cp libinput_simulator_linux.so ../../..
+cp lib/libinput_simulator_linux.so ../../..
 ```
 
 ### macOS
@@ -120,7 +120,7 @@ cmake ..
 make
 
 # 复制.dylib到Flutter项目根目录
-cp libinput_simulator_macos.dylib ../../..
+cp lib/libinput_simulator_macos.dylib ../../..
 ```
 
 ### Android

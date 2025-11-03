@@ -68,7 +68,7 @@ if %ERRORLEVEL% NEQ 0 (
 )
 
 REM 复制DLL到项目根目录
-copy Release\input_simulator_windows.dll ..\..\..
+copy bin\Release\input_simulator_windows.dll ..\..\..
 cd ..\..\..
 echo.
 

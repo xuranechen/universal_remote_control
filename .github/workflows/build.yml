@@ -38,7 +38,7 @@ jobs:
         cd build
         cmake .. -A x64
         cmake --build . --config Release
-        copy Release\input_simulator_windows.dll ..\..\..
+        copy bin\Release\input_simulator_windows.dll ..\..\..
     
     - name: 构建Windows应用
       run: flutter build windows --release
@@ -100,7 +100,7 @@ jobs:
         cd build
         cmake ..
         make -j$(nproc)
-        cp libinput_simulator_linux.so ../../..
+        cp lib/libinput_simulator_linux.so ../../..
     
     - name: 构建Linux应用
       run: flutter build linux --release
@@ -158,7 +158,7 @@ jobs:
         cd build
         cmake ..
         make -j$(sysctl -n hw.ncpu)
-        cp libinput_simulator_macos.dylib ../../..
+        cp lib/libinput_simulator_macos.dylib ../../..
     
     - name: 构建macOS应用
       run: flutter build macos --release

@@ -94,8 +94,8 @@ jobs:
         cd build
         cmake .. -A x64
         cmake --build . --config Release
-        copy Release\input_simulator_windows.dll ..\..\..
-        cd ..\..\..\
+        copy bin\Release\input_simulator_windows.dll ..\..\..
+        cd ..\..\..\ 
         
         flutter build windows --release
         
@@ -149,7 +149,7 @@ jobs:
         cd build
         cmake ..
         make -j$(nproc)
-        cp libinput_simulator_linux.so ../../..
+        cp lib/libinput_simulator_linux.so ../../..
         cd ../../..
         
         flutter build linux --release
@@ -207,7 +207,7 @@ jobs:
         cd build
         cmake ..
         make -j$(sysctl -n hw.ncpu)
-        cp libinput_simulator_macos.dylib ../../..
+        cp lib/libinput_simulator_macos.dylib ../../..
         cd ../../..
         
         flutter build macos --release
