@@ -6,6 +6,7 @@ import 'package:logger/logger.dart';
 import '../models/control_event.dart';
 import '../models/connection_state.dart' as remote;
 import '../core/protocol.dart';
+import '../utils/performance_manager.dart';
 
 /// WebSocket 通信服务
 class WebSocketService {
@@ -23,6 +24,10 @@ class WebSocketService {
   
   Timer? _heartbeatTimer;
   remote.RemoteConnectionState _currentState = remote.RemoteConnectionState.disconnected();
+  
+  // 性能管理
+  final PerformanceManager _performanceManager = PerformanceManager();
+  late final BatchProcessor<ControlEvent> _eventBatchProcessor;
 
   /// 接收到的事件流
   Stream<ControlEvent> get eventStream => _eventController.stream;

@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:network_info_plus/network_info_plus.dart';
 import '../models/device_info.dart';
 
 /// 平台辅助工具
@@ -50,6 +51,69 @@ class PlatformHelper {
   /// 检查是否为桌面平台
   static bool isDesktop() {
     return Platform.isWindows || Platform.isMacOS || Platform.isLinux;
+  }
+
+  /// 获取本地IP地址
+  static Future<String?> getLocalIP() async {
+    try {
+      final networkInfo = NetworkInfo();
+      
+      // 首先尝试获取WiFi IP
+      String? ip = await networkInfo.getWifiIP();
+      if (ip != null && ip.isNotEmpty) {
+        return ip;
+      }
+      
+      // 如果WiFi IP获取失败，尝试通过Socket获取
+      return await _getLocalIPFromSocket();
+    } catch (e) {
+      print('获取IP地址失败: $e');
+      return null;
+    }
+  }
+
+  /// 通过Socket获取本地IP地址
+  static Future<String?> _getLocalIPFromSocket() async {
+    try {
+      // 连接到外部地址以获取本地IP
+      final socket = await Socket.connect('8.8.8.8', 80);
+      final localAddress = socket.address.address;
+      socket.destroy();
+      return localAddress;
+    } catch (e) {
+      print('通过Socket获取IP失败: $e');
+      
+      // 最后尝试遍历网络接口
+      try {
+        final interfaces = await NetworkInterface.list();
+        for (final interface in interfaces) {
+          for (final addr in interface.addresses) {
+            if (addr.type == InternetAddressType.IPv4 && 
+                !addr.isLoopback && 
+                !addr.isLinkLocal) {
+              return addr.address;
+            }
+          }
+        }
+      } catch (e) {
+        print('遍历网络接口失败: $e');
+      }
+      
+      return null;
+    }
+  }
+
+  /// 获取广播地址
+  static String getBroadcastAddress(String? localIP) {
+    if (localIP == null) return '255.255.255.255';
+    
+    // 简单实现：假设子网掩码为 255.255.255.0
+    final parts = localIP.split('.');
+    if (parts.length == 4) {
+      return '${parts[0]}.${parts[1]}.${parts[2]}.255';
+    }
+    
+    return '255.255.255.255';
   }
 }
 

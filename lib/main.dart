@@ -5,6 +5,7 @@ import 'ui/pages/home_page.dart';
 import 'services/websocket_service.dart';
 import 'services/input_capture_service.dart';
 import 'services/input_simulator_service.dart';
+import 'services/platform_input_service.dart';
 import 'core/device_discovery.dart';
 
 void main() {

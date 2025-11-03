@@ -3,6 +3,8 @@ import 'dart:io';
 import 'dart:convert';
 import 'package:logger/logger.dart';
 import '../models/device_info.dart';
+import '../utils/platform_helper.dart';
+import '../utils/performance_manager.dart';
 import 'protocol.dart';
 
 /// 设备发现服务（基于UDP广播）
@@ -21,6 +23,10 @@ class DeviceDiscovery {
   
   DeviceInfo? _localDevice;
   bool _isRunning = false;
+  
+  // 性能管理
+  final PerformanceManager _performanceManager = PerformanceManager();
+  late final BatchProcessor<DeviceInfo> _deviceBatchProcessor;
 
   /// 发现的设备列表流
   Stream<List<DeviceInfo>> get devicesStream => _devicesController.stream;
@@ -30,12 +36,27 @@ class DeviceDiscovery {
 
   /// 开始设备发现
   Future<void> start(DeviceInfo localDevice) async {
-    if (_isRunning) {
-      _logger.w('设备发现已在运行');
-      return;
-    }
+    final tracker = _performanceManager.startTracking('device_discovery_start');
+    
+    try {
+      if (_isRunning) {
+        _logger.w('设备发现已在运行');
+        return;
+      }
 
-    _localDevice = localDevice;
+      // 初始化批处理器
+      _deviceBatchProcessor = _performanceManager.createBatchProcessor<DeviceInfo>(
+        interval: const Duration(milliseconds: 500),
+        processor: _processBatchedDevices,
+        maxBatchSize: 10,
+      );
+
+    // 获取本地IP地址并更新设备信息
+    final localIP = await PlatformHelper.getLocalIP();
+    _localDevice = localDevice.copyWith(
+      ip: localIP ?? '0.0.0.0',
+      timestamp: DateTime.now().millisecondsSinceEpoch,
+    );
     _isRunning = true;
 
     try {
@@ -43,7 +64,7 @@ class DeviceDiscovery {
       _socket = await RawDatagramSocket.bind(InternetAddress.anyIPv4, discoveryPort);
       _socket!.broadcastEnabled = true;
 
-      _logger.i('设备发现服务已启动，端口: $discoveryPort');
+      _logger.i('设备发现服务已启动，端口: $discoveryPort，本地IP: ${_localDevice!.ip}');
 
       // 监听接收到的广播
       _socket!.listen(_handleIncomingPacket);
@@ -66,6 +87,8 @@ class DeviceDiscovery {
       _logger.e('启动设备发现失败: $e');
       _isRunning = false;
       rethrow;
+    } finally {
+      tracker.stop();
     }
   }
 
@@ -90,13 +113,16 @@ class DeviceDiscovery {
       final message = Protocol.encodeDeviceInfo(_localDevice!);
       final data = utf8.encode(message);
       
+      // 使用智能广播地址
+      final broadcastAddr = PlatformHelper.getBroadcastAddress(_localDevice!.ip);
+      
       _socket!.send(
         data,
-        InternetAddress(broadcastAddress),
+        InternetAddress(broadcastAddr),
         discoveryPort,
       );
 
-      _logger.d('广播设备信息: ${_localDevice!.name}');
+      _logger.d('广播设备信息: ${_localDevice!.name} 到 $broadcastAddr');
     } catch (e) {
       _logger.e('广播设备信息失败: $e');
     }
@@ -176,9 +202,44 @@ class DeviceDiscovery {
     _devicesController.add(devices);
   }
 
+  /// 批处理设备更新
+  void _processBatchedDevices(List<DeviceInfo> devices) {
+    if (devices.isNotEmpty) {
+      final tracker = _performanceManager.startTracking('batch_process_devices');
+      tracker.addMetadata('device_count', devices.length);
+      
+      try {
+        // 批量更新设备信息到流中
+        _devicesController.add(_discoveredDevices.values.toList());
+      } finally {
+        tracker.stop();
+      }
+    }
+  }
+
+  /// 优化广播逻辑（使用节流）
+  void _broadcastDeviceInfoThrottled() {
+    _performanceManager.throttle(
+      'broadcast_device_info',
+      _broadcastDeviceInfo,
+      const Duration(milliseconds: 500),
+    );
+  }
+
+  /// 优化设备处理（使用防抖）
+  void _processDeviceWithDebounce(DeviceInfo device) {
+    _performanceManager.debounce(
+      'process_device_${device.id}',
+      () => _deviceBatchProcessor.add(device),
+      const Duration(milliseconds: 100),
+    );
+  }
+
   /// 释放资源
   void dispose() {
     stop();
+    _deviceBatchProcessor.dispose();
+    _performanceManager.dispose();
     _devicesController.close();
   }
 }

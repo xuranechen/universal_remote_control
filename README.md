@@ -6,18 +6,23 @@
 
 一个由AI实现的跨平台的通用远程控制系统，让任意设备都能成为控制端或被控端。
 
+📚 **[查看所有文档](DOCS.md)** | 🚀 **[快速开始](QUICKSTART.md)** | 📝 **[更新日志](CHANGELOG.md)**
+
 ## 🌟 核心特性
 
 - ✅ **真正跨平台**: Android / iOS / Windows / macOS / Linux 全支持
 - 🔄 **双向控制**: 任意设备都可以作为控制端或被控端
 - 🎯 **多种输入方式**:
-  - 陀螺仪飞鼠控制
-  - 触摸屏模拟
-  - 键盘输入
-  - 鼠标操作
-- 🌐 **局域网自动发现**: 无需手动输入IP
+  - 🎮 陀螺仪飞鼠控制
+  - 📱 触摸屏模拟触摸板
+  - ⌨️ 完整虚拟键盘（支持快捷键）
+  - 🖱️ 精确鼠标操作
+- 🌐 **智能设备发现**: UDP广播 + QR码扫描连接
+- 🎨 **现代化UI**: 响应式设计，适配所有屏幕尺寸
+- ✨ **流畅动画**: 页面过渡和交互反馈动画
+- ⚡ **高性能优化**: 事件节流、批处理、缓存系统
 - 🔒 **安全加密**: 支持密码配对和加密通信
-- ⚡ **低延迟**: 优化的通信协议，支持高频率输入
+- 📱 **完美适配**: 移动端、平板、桌面三种布局模式
 
 ## 🏗️ 系统架构
 
@@ -74,14 +79,21 @@
 
 ### UI 界面层
 - `pages/` - 页面
-  - `home_page.dart` - 主页（模式选择）
-  - `controller_page.dart` - 控制端界面
-  - `controlled_page.dart` - 被控端界面
-  - `device_list_page.dart` - 设备列表
+  - `home_page.dart` - 主页（模式选择，响应式设计）
+  - `controller_page.dart` - 控制端界面（三种控制模式）
+  - `controlled_page.dart` - 被控端界面（状态显示+QR码）
+  - `device_list_page.dart` - 设备列表（扫描+手动添加）
+  - `qr_scanner_page.dart` - QR码扫描页面
 - `widgets/` - 组件
-  - `virtual_touchpad.dart` - 虚拟触摸板
+  - `virtual_touchpad.dart` - 虚拟触摸板（支持右键+滚动）
   - `gyro_controller.dart` - 陀螺仪控制器
-  - `virtual_keyboard.dart` - 虚拟键盘
+  - `virtual_keyboard.dart` - 完整虚拟键盘（QWERTY+快捷键）
+
+### Utils 工具层
+- `responsive_helper.dart` - 响应式布局工具
+- `animations.dart` - 动画管理系统
+- `performance_manager.dart` - 性能优化管理器
+- `qr_code_helper.dart` - QR码编码解码工具
 
 ### Native 原生层
 - `windows/` - Windows输入模拟（C++）
@@ -192,6 +204,27 @@ flutter run -d android  # Android
 flutter run -d ios      # iOS
 ```
 
+## 🎨 应用图标配置
+
+项目已配置自动图标生成系统，支持所有平台。
+
+### 快速设置图标
+
+1. **准备图标**：1024x1024px PNG文件
+2. **放入文件夹**：`assets/icon/app_icon.png`
+3. **运行脚本**：
+   ```bash
+   # Windows
+   scripts\generate_icons.bat
+   
+   # Linux/macOS
+   ./scripts/generate_icons.sh
+   ```
+
+**快速生成图标**：访问 [AppIcon.co](https://www.appicon.co/) 使用"Text to Icon"功能，输入🎮或URC，选择蓝色背景即可。
+
+详细说明见：`assets/icon/README.md`
+
 ## 📱 Android 特殊配置
 
 ### 权限配置
@@ -213,15 +246,25 @@ flutter run -d ios      # iOS
 ### 作为控制端
 
 1. 启动应用，选择"控制端模式"
-2. 扫描局域网内的被控设备
+2. 发现设备：
+   - 📡 自动扫描局域网内的被控设备
+   - 📱 扫描QR码快速连接
+   - ➕ 手动添加设备IP
 3. 选择要控制的设备并连接
-4. 使用陀螺仪/触摸板/虚拟键盘进行控制
+4. 选择控制模式：
+   - 🎮 **陀螺仪模式**：移动设备控制鼠标指针
+   - 📱 **触摸板模式**：触摸屏模拟触摸板（支持右键、滚动）
+   - ⌨️ **键盘模式**：完整虚拟键盘（支持快捷键组合）
 
 ### 作为被控端
 
 1. 启动应用，选择"被控端模式"
-2. 等待控制端连接
-3. （Android）首次使用需要授予无障碍权限
+2. 设备信息展示：
+   - 📶 实时连接状态显示
+   - 📊 网络统计信息
+   - 📱 生成QR码供控制端扫描
+3. 等待控制端连接
+4. （Android）首次使用需要授予无障碍权限
 
 ## 🔧 通信协议
 
@@ -275,23 +318,44 @@ git push origin v1.0.0
 
 ## 🛠️ 开发路线图
 
-- [x] 基础项目结构
-- [x] 核心通信协议
-- [x] 设备发现功能
-- [x] Windows输入模拟
-- [x] Linux输入模拟
-- [x] macOS输入模拟
-- [x] Android输入模拟（AccessibilityService）
-- [x] 陀螺仪飞鼠功能
-- [x] 虚拟触摸板
-- [x] UI界面完善
-- [x] 一键打包脚本
-- [x] GitHub Actions CI/CD
-- [ ] 虚拟键盘
-- [ ] 性能优化
+### ✅ 已完成功能
+
+- [x] **基础架构**
+  - [x] 基础项目结构
+  - [x] 核心通信协议
+  - [x] 设备发现功能
+  - [x] 一键打包脚本
+  - [x] GitHub Actions CI/CD
+
+- [x] **跨平台输入模拟**
+  - [x] Windows输入模拟（C++ Win32 API）
+  - [x] Linux输入模拟（C++ XTest）
+  - [x] macOS输入模拟（C++ Core Graphics）
+  - [x] Android输入模拟（AccessibilityService）
+
+- [x] **控制功能**
+  - [x] 陀螺仪飞鼠功能
+  - [x] 虚拟触摸板（支持右键+滚动）
+  - [x] ⌨️ **完整虚拟键盘**（QWERTY+快捷键）
+
+- [x] **用户界面**
+  - [x] 🎨 **响应式UI设计**（移动端/平板/桌面）
+  - [x] ✨ **流畅动画系统**（页面过渡+交互反馈）
+  - [x] 📱 **QR码扫描连接**
+  - [x] 🎯 **三种控制模式切换**
+
+- [x] **性能优化**
+  - [x] ⚡ **性能管理系统**（节流、防抖、批处理）
+  - [x] 🧠 **智能缓存机制**（LRU缓存）
+  - [x] 📊 **性能监控工具**
+
+### 🚧 开发中
+
 - [ ] 安全加密
 - [ ] 多设备管理
 - [ ] 云端中继支持
+- [ ] 语音控制
+- [ ] 手势识别
 
 ## 📄 许可证
 

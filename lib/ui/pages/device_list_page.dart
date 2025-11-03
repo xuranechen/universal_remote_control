@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/device_info.dart';
 import '../../core/device_discovery.dart';
+import '../../utils/responsive_helper.dart';
+import '../../utils/animations.dart';
 import 'controller_page.dart';
+import 'qr_scanner_page.dart';
 
 /// 设备列表页面 - 扫描并连接到被控设备
 class DeviceListPage extends StatefulWidget {
@@ -78,11 +81,13 @@ class _DeviceListPageState extends State<DeviceListPage> {
   void _connectToDevice(DeviceInfo device) {
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (context) => ControllerPage(
+      AppAnimations.createRoute(
+        page: ControllerPage(
           localDevice: widget.localDevice,
           targetDevice: device,
         ),
+        type: RouteTransitionType.slideAndFade,
+        direction: SlideDirection.fromRight,
       ),
     );
   }
@@ -100,6 +105,40 @@ class _DeviceListPageState extends State<DeviceListPage> {
     );
   }
 
+  /// 扫码连接设备
+  void _scanQRCode() async {
+    try {
+      final result = await Navigator.push<DeviceInfo>(
+        context,
+        AppAnimations.createRoute(
+          page: const QRScannerPage(),
+          type: RouteTransitionType.slideAndFade,
+          direction: SlideDirection.fromBottom,
+        ),
+      );
+      
+      if (result != null) {
+        // 添加扫描到的设备到发现列表
+        final discovery = context.read<DeviceDiscovery>();
+        discovery.addDevice(result);
+        
+        // 显示成功提示
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('已添加设备: ${result.name}'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        
+        // 自动连接到扫描的设备
+        _connectToDevice(result);
+      }
+    } catch (e) {
+      print('扫码失败: $e');
+      _showError('扫码失败: $e');
+    }
+  }
+
   /// 显示错误
   void _showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -113,118 +152,485 @@ class _DeviceListPageState extends State<DeviceListPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('选择设备'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.add),
-            onPressed: _manualAddDevice,
-            tooltip: '手动添加',
+      body: Container(
+        decoration: _buildGradientBackground(context),
+        child: SafeArea(
+          child: Column(
+            children: [
+              _buildHeader(context),
+              if (_isScanning) _buildScanningIndicator(context),
+              Expanded(
+                child: MaxWidthContainer(
+                  child: _devices.isEmpty
+                      ? _buildEmptyState(context)
+                      : _buildDeviceGrid(context),
+                ),
+              ),
+            ],
           ),
-          IconButton(
-            icon: Icon(_isScanning ? Icons.stop : Icons.refresh),
-            onPressed: _isScanning ? _stopScanning : _startScanning,
-            tooltip: _isScanning ? '停止扫描' : '刷新',
+        ),
+      ),
+    );
+  }
+
+  /// 构建渐变背景
+  BoxDecoration _buildGradientBackground(BuildContext context) {
+    return BoxDecoration(
+      gradient: LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [
+          Theme.of(context).colorScheme.primary.withOpacity(0.1),
+          Theme.of(context).colorScheme.secondary.withOpacity(0.05),
+          Theme.of(context).colorScheme.surface,
+        ],
+        stops: const [0.0, 0.5, 1.0],
+      ),
+    );
+  }
+
+  /// 构建头部
+  Widget _buildHeader(BuildContext context) {
+    return Container(
+      padding: ResponsiveHelper.getResponsivePadding(context),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              IconButton(
+                onPressed: () => Navigator.pop(context),
+                icon: const Icon(Icons.arrow_back),
+                tooltip: '返回',
+              ),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '发现设备',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      '选择要连接的被控端设备',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              _buildActionButtons(context),
+            ],
+          ),
+          const SizedBox(height: 8),
+          _buildStatsRow(context),
+        ],
+      ),
+    );
+  }
+
+  /// 构建操作按钮
+  Widget _buildActionButtons(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        IconButton.filledTonal(
+          onPressed: _scanQRCode,
+          icon: const Icon(Icons.qr_code_scanner),
+          tooltip: '扫码连接',
+        ),
+        const SizedBox(width: 8),
+        IconButton.filledTonal(
+          onPressed: _manualAddDevice,
+          icon: const Icon(Icons.add),
+          tooltip: '手动添加',
+        ),
+        const SizedBox(width: 8),
+        IconButton.filled(
+          onPressed: _isScanning ? _stopScanning : _startScanning,
+          icon: Icon(_isScanning ? Icons.stop : Icons.refresh),
+          tooltip: _isScanning ? '停止扫描' : '刷新',
+        ),
+      ],
+    );
+  }
+
+  /// 构建统计行
+  Widget _buildStatsRow(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.5),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          _buildStatItem(
+            context,
+            icon: Icons.devices,
+            label: '已发现',
+            value: '${_devices.length}',
+          ),
+          Container(
+            width: 1,
+            height: 20,
+            color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
+          ),
+          _buildStatItem(
+            context,
+            icon: _isScanning ? Icons.search : Icons.check_circle,
+            label: _isScanning ? '搜索中' : '已完成',
+            value: _isScanning ? '...' : '✓',
           ),
         ],
       ),
-      body: Column(
-        children: [
-          // 扫描状态指示器
-          if (_isScanning)
-            Container(
-              padding: const EdgeInsets.all(16),
-              color: Theme.of(context).colorScheme.primaryContainer,
-              child: Row(
-                children: [
-                  const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  ),
-                  const SizedBox(width: 16),
-                  Text(
-                    '正在扫描局域网设备...',
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.onPrimaryContainer,
-                    ),
-                  ),
-                ],
+    );
+  }
+
+  /// 构建统计项
+  Widget _buildStatItem(
+    BuildContext context, {
+    required IconData icon,
+    required String label,
+    required String value,
+  }) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          icon,
+          size: 16,
+          color: Theme.of(context).colorScheme.primary,
+        ),
+        const SizedBox(width: 4),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              value,
+              style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                fontWeight: FontWeight.bold,
               ),
             ),
+            Text(
+              label,
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
 
-          // 设备列表
-          Expanded(
-            child: _devices.isEmpty
-                ? _buildEmptyState()
-                : ListView.builder(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: _devices.length,
-                    itemBuilder: (context, index) {
-                      final device = _devices[index];
-                      return _buildDeviceCard(device);
-                    },
-                  ),
+  /// 构建扫描指示器
+  Widget _buildScanningIndicator(BuildContext context) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.primaryContainer,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
         ],
+      ),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 20,
+            height: 20,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              valueColor: AlwaysStoppedAnimation<Color>(
+                Theme.of(context).colorScheme.onPrimaryContainer,
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              '正在搜索局域网内的被控端设备...',
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onPrimaryContainer,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 构建设备网格
+  Widget _buildDeviceGrid(BuildContext context) {
+    final columns = ResponsiveHelper.getGridColumns(context);
+    
+    if (ResponsiveHelper.isMobile(context)) {
+      return ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: _devices.length,
+        itemBuilder: (context, index) => AppAnimations.buildListItemAnimation(
+          index: index,
+          child: _buildEnhancedDeviceCard(_devices[index]),
+        ),
+      );
+    }
+    
+    return GridView.builder(
+      padding: const EdgeInsets.all(16),
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: columns,
+        crossAxisSpacing: ResponsiveHelper.getCardSpacing(context),
+        mainAxisSpacing: ResponsiveHelper.getCardSpacing(context),
+        childAspectRatio: 1.2,
+      ),
+      itemCount: _devices.length,
+      itemBuilder: (context, index) => AppAnimations.buildListItemAnimation(
+        index: index,
+        child: _buildEnhancedDeviceCard(_devices[index]),
       ),
     );
   }
 
   /// 构建空状态
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(BuildContext context) {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.devices_other,
-            size: 80,
-            color: Theme.of(context).colorScheme.secondary.withOpacity(0.5),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            _isScanning ? '正在搜索设备...' : '未发现设备',
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            '确保设备在同一局域网内\n并已启动被控端模式',
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Theme.of(context).colorScheme.secondary,
+      child: Container(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 120,
+              height: 120,
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.search,
+                size: 60,
+                color: Theme.of(context).colorScheme.primary.withOpacity(0.7),
+              ),
             ),
-          ),
-          const SizedBox(height: 24),
-          if (!_isScanning)
-            ElevatedButton.icon(
-              onPressed: _startScanning,
-              icon: const Icon(Icons.refresh),
-              label: const Text('重新扫描'),
+            const SizedBox(height: 24),
+            Text(
+              _isScanning ? '正在搜索设备...' : '未发现设备',
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
             ),
-        ],
+            const SizedBox(height: 12),
+            Text(
+              '确保设备在同一局域网内并已启动被控端模式',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+              ),
+            ),
+            const SizedBox(height: 32),
+            if (!_isScanning) _buildQuickActions(context),
+          ],
+        ),
       ),
     );
   }
 
-  /// 构建设备卡片
-  Widget _buildDeviceCard(DeviceInfo device) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-          child: Icon(
-            _getDeviceIcon(device.type),
-            color: Theme.of(context).colorScheme.onPrimaryContainer,
+  /// 构建快速操作按钮
+  Widget _buildQuickActions(BuildContext context) {
+    return ResponsiveBuilder(
+      builder: (context, screenType) {
+        final isVertical = screenType == ScreenType.mobile;
+        
+        final children = [
+          Expanded(
+            child: ElevatedButton.icon(
+              onPressed: _startScanning,
+              icon: const Icon(Icons.refresh),
+              label: const Text('重新扫描'),
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ),
+          SizedBox(
+            width: isVertical ? 0 : 12,
+            height: isVertical ? 12 : 0,
+          ),
+          Expanded(
+            child: ElevatedButton.icon(
+              onPressed: _scanQRCode,
+              icon: const Icon(Icons.qr_code_scanner),
+              label: const Text('扫码连接'),
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ),
+        ];
+
+        return Container(
+          constraints: const BoxConstraints(maxWidth: 400),
+          child: isVertical
+              ? Column(children: children)
+              : Row(children: children),
+        );
+      },
+    );
+  }
+
+  /// 构建增强的设备卡片
+  Widget _buildEnhancedDeviceCard(DeviceInfo device) {
+    return AppAnimations.buildTapAnimation(
+      onTap: () => _connectToDevice(device),
+      child: Card(
+        margin: const EdgeInsets.only(bottom: 12),
+        elevation: 4,
+        shadowColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: InkWell(
+          onTap: () => _connectToDevice(device),
+          borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Theme.of(context).colorScheme.primaryContainer.withOpacity(0.1),
+                Theme.of(context).colorScheme.surface,
+              ],
+            ),
+          ),
+          child: Row(
+            children: [
+              // 设备图标
+              Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  color: _getDeviceColor(device.type).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Icon(
+                  _getDeviceIcon(device.type),
+                  color: _getDeviceColor(device.type),
+                  size: 28,
+                ),
+              ),
+              const SizedBox(width: 16),
+              
+              // 设备信息
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      device.name,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.computer,
+                          size: 14,
+                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          _getDeviceTypeName(device.type),
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.wifi,
+                          size: 14,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          device.ip,
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Theme.of(context).colorScheme.primary,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              
+              // 连接按钮
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  Icons.arrow_forward_ios,
+                  size: 16,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+              ),
+            ],
           ),
         ),
-        title: Text(device.name),
-        subtitle: Text('${device.ip} • ${_getDeviceTypeName(device.type)}'),
-        trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-        onTap: () => _connectToDevice(device),
       ),
     );
+  }
+
+  /// 获取设备颜色
+  Color _getDeviceColor(DeviceType type) {
+    switch (type) {
+      case DeviceType.android:
+        return Colors.green;
+      case DeviceType.ios:
+        return Colors.blue;
+      case DeviceType.windows:
+        return Colors.blue.shade700;
+      case DeviceType.macos:
+        return Colors.grey.shade700;
+      case DeviceType.linux:
+        return Colors.orange;
+      default:
+        return Colors.grey;
+    }
   }
 
   IconData _getDeviceIcon(DeviceType type) {

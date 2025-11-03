@@ -10,10 +10,32 @@ on:
         description: 'Version number (e.g. 1.0.0)'
         required: true
         type: string
+      build_windows:
+        description: 'Build Windows (true/false)'
+        required: false
+        type: boolean
+        default: false
+      build_linux:
+        description: 'Build Linux (true/false)'
+        required: false
+        type: boolean
+        default: false
+      build_macos:
+        description: 'Build macOS (true/false)'
+        required: false
+        type: boolean
+        default: false
+      build_android:
+        description: 'Build Android (true/false)'
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   create-release:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     outputs:
       upload_url: ${{ steps.create_release.outputs.upload_url }}
       version: ${{ steps.get_version.outputs.version }}
@@ -56,6 +78,8 @@ jobs:
             - **macOS**: universal_remote_control_macos_v${{ steps.get_version.outputs.version }}.zip
             - **Android APK**: universal_remote_control_v${{ steps.get_version.outputs.version }}.apk
             
+            Note: Only selected platforms were built in this release.
+            
             ### Features
             
             - Cross-platform remote control (Windows/Linux/macOS/Android)
@@ -76,6 +100,11 @@ jobs:
     needs: create-release
     runs-on: windows-latest
     timeout-minutes: 60
+    permissions:
+      contents: write
+    if: |
+      github.event_name == 'push' || 
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.build_windows == 'true')
     
     steps:
       - name: Checkout code
@@ -144,6 +173,11 @@ jobs:
     needs: create-release
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    permissions:
+      contents: write
+    if: |
+      github.event_name == 'push' || 
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.build_linux == 'true')
     
     steps:
       - name: Checkout code
@@ -209,6 +243,11 @@ jobs:
     needs: create-release
     runs-on: macos-latest
     timeout-minutes: 60
+    permissions:
+      contents: write
+    if: |
+      github.event_name == 'push' || 
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.build_macos == 'true')
     
     steps:
       - name: Checkout code
@@ -271,6 +310,11 @@ jobs:
     needs: create-release
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    permissions:
+      contents: write
+    if: |
+      github.event_name == 'push' || 
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.build_android == 'true')
     
     steps:
       - name: Checkout code
@@ -324,10 +368,10 @@ jobs:
           echo "## Version: v${{ needs.create-release.outputs.version }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "## Build Status" >> $GITHUB_STEP_SUMMARY
-          echo "- Windows: ${{ needs.build-windows.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Linux: ${{ needs.build-linux.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "- macOS: ${{ needs.build-macos.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Android: ${{ needs.build-android.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Windows: ${{ needs.build-windows.result || 'skipped' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Linux: ${{ needs.build-linux.result || 'skipped' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- macOS: ${{ needs.build-macos.result || 'skipped' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Android: ${{ needs.build-android.result || 'skipped' }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "## Download" >> $GITHUB_STEP_SUMMARY
           echo "Visit [Releases](https://github.com/${{ github.repository }}/releases/tag/v${{ needs.create-release.outputs.version }}) page to download." >> $GITHUB_STEP_SUMMARY

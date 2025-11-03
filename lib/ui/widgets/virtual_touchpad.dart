@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../services/input_capture_service.dart';
+import '../../models/control_event.dart';
 
 /// 虚拟触摸板组件
 class VirtualTouchpad extends StatefulWidget {
@@ -20,6 +23,10 @@ class VirtualTouchpad extends StatefulWidget {
 class _VirtualTouchpadState extends State<VirtualTouchpad> {
   Offset? _lastPosition;
   double _sensitivity = 1.0;
+  bool _isScrollMode = false;
+  bool _isTwoFingerMode = false;
+  int _tapCount = 0;
+  DateTime? _lastTapTime;
 
   @override
   Widget build(BuildContext context) {
@@ -30,20 +37,30 @@ class _VirtualTouchpadState extends State<VirtualTouchpad> {
           child: GestureDetector(
             onPanStart: (details) {
               _lastPosition = details.localPosition;
+              _isScrollMode = false;
             },
             onPanUpdate: (details) {
               if (_lastPosition != null) {
                 final dx = (details.localPosition.dx - _lastPosition!.dx) * _sensitivity;
                 final dy = (details.localPosition.dy - _lastPosition!.dy) * _sensitivity;
                 
-                widget.onMove(dx, dy);
+                if (_isScrollMode) {
+                  // 滚轮模式
+                  _sendScrollEvent(dx, dy);
+                } else {
+                  // 鼠标移动模式
+                  widget.onMove(dx, dy);
+                }
                 _lastPosition = details.localPosition;
               }
             },
             onPanEnd: (details) {
               _lastPosition = null;
+              _isScrollMode = false;
             },
-            onTap: widget.onTap,
+            onTap: () => _handleTap(MouseButton.left),
+            onSecondaryTap: () => _handleTap(MouseButton.right),
+            onLongPress: () => _handleTap(MouseButton.right),
             child: Container(
               margin: const EdgeInsets.all(20),
               decoration: BoxDecoration(
@@ -128,18 +145,26 @@ class _VirtualTouchpadState extends State<VirtualTouchpad> {
                   context,
                   icon: Icons.mouse,
                   label: '左键',
-                  onTap: widget.onTap,
+                  onTap: () => _handleTap(MouseButton.left),
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 8),
               Expanded(
                 child: _buildButton(
                   context,
                   icon: Icons.radio_button_unchecked,
                   label: '右键',
-                  onTap: () {
-                    // TODO: 实现右键点击
-                  },
+                  onTap: () => _handleTap(MouseButton.right),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _buildButton(
+                  context,
+                  icon: Icons.scroll,
+                  label: '滚轮',
+                  onTap: _toggleScrollMode,
+                  isActive: _isScrollMode,
                 ),
               ),
             ],
@@ -154,11 +179,18 @@ class _VirtualTouchpadState extends State<VirtualTouchpad> {
     required IconData icon,
     required String label,
     required VoidCallback onTap,
+    bool isActive = false,
   }) {
     return ElevatedButton(
       onPressed: onTap,
       style: ElevatedButton.styleFrom(
         padding: const EdgeInsets.symmetric(vertical: 16),
+        backgroundColor: isActive 
+            ? Theme.of(context).colorScheme.primaryContainer
+            : null,
+        foregroundColor: isActive 
+            ? Theme.of(context).colorScheme.onPrimaryContainer
+            : null,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
         ),
@@ -168,10 +200,41 @@ class _VirtualTouchpadState extends State<VirtualTouchpad> {
         children: [
           Icon(icon),
           const SizedBox(height: 4),
-          Text(label),
+          Text(label, style: const TextStyle(fontSize: 12)),
         ],
       ),
     );
+  }
+  
+  // 处理点击事件
+  void _handleTap(MouseButton button) {
+    final inputCapture = context.read<InputCaptureService>();
+    inputCapture.sendMouseClick(button: button, state: KeyState.press);
+    widget.onTap(); // 保持兼容性
+  }
+  
+  // 切换滚轮模式
+  void _toggleScrollMode() {
+    setState(() {
+      _isScrollMode = !_isScrollMode;
+    });
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(_isScrollMode ? '滚轮模式已启用' : '滚轮模式已关闭'),
+        duration: const Duration(seconds: 1),
+      ),
+    );
+  }
+  
+  // 发送滚轮事件
+  void _sendScrollEvent(double dx, double dy) {
+    if (widget.onScroll != null) {
+      widget.onScroll!(dx, dy);
+    } else {
+      final inputCapture = context.read<InputCaptureService>();
+      inputCapture.sendMouseScroll(dx, dy);
+    }
   }
 }
 

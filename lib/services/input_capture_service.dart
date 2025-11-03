@@ -130,6 +130,51 @@ class InputCaptureService {
     _eventController.add(event);
   }
 
+  /// 发送按键事件（简化版本，用于虚拟键盘）
+  void sendKeyPress(String key, {List<String>? modifiers}) {
+    bool ctrl = modifiers?.contains('Control') ?? false;
+    bool shift = modifiers?.contains('Shift') ?? false;
+    bool alt = modifiers?.contains('Alt') ?? false;
+    
+    sendKeyboard(
+      key: key,
+      state: KeyState.press,
+      ctrl: ctrl,
+      shift: shift,
+      alt: alt,
+    );
+  }
+
+  /// 发送按键按下事件
+  void sendKeyDown(String key, {List<String>? modifiers}) {
+    bool ctrl = modifiers?.contains('Control') ?? false;
+    bool shift = modifiers?.contains('Shift') ?? false;
+    bool alt = modifiers?.contains('Alt') ?? false;
+    
+    sendKeyboard(
+      key: key,
+      state: KeyState.down,
+      ctrl: ctrl,
+      shift: shift,
+      alt: alt,
+    );
+  }
+
+  /// 发送按键释放事件
+  void sendKeyUp(String key, {List<String>? modifiers}) {
+    bool ctrl = modifiers?.contains('Control') ?? false;
+    bool shift = modifiers?.contains('Shift') ?? false;
+    bool alt = modifiers?.contains('Alt') ?? false;
+    
+    sendKeyboard(
+      key: key,
+      state: KeyState.up,
+      ctrl: ctrl,
+      shift: shift,
+      alt: alt,
+    );
+  }
+
   /// 手动发送触摸事件
   void sendTouch({
     required double x,

@@ -1,10 +1,7 @@
 name: Build All Platforms
 
 on:
-  push:
-    branches: [ main, develop ]
-  pull_request:
-    branches: [ main ]
+  # 已禁用自动构建，仅支持手动触发
   workflow_dispatch:
 
 jobs:

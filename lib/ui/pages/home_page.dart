@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'dart:io';
 import '../../models/device_info.dart';
+import '../../utils/responsive_helper.dart';
+import '../../utils/animations.dart';
 import 'controlled_page.dart';
 import 'device_list_page.dart';
 
@@ -76,120 +78,270 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading || _localDevice == null) {
-      return const Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(),
+      return Scaffold(
+        body: Container(
+          decoration: _buildGradientBackground(context),
+          child: const Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(height: 16),
+                Text('正在初始化设备信息...'),
+              ],
+            ),
+          ),
         ),
       );
     }
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Universal Remote Control'),
-        centerTitle: true,
-        elevation: 0,
-      ),
       body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Theme.of(context).colorScheme.primary.withOpacity(0.1),
-              Theme.of(context).colorScheme.background,
-            ],
+        decoration: _buildGradientBackground(context),
+        child: SafeArea(
+          child: MaxWidthContainer(
+            child: ResponsiveBuilder(
+              builder: (context, screenType) {
+                switch (screenType) {
+                  case ScreenType.mobile:
+                    return _buildMobileLayout(context);
+                  case ScreenType.tablet:
+                    return _buildTabletLayout(context);
+                  case ScreenType.desktop:
+                    return _buildDesktopLayout(context);
+                }
+              },
+            ),
           ),
         ),
-        child: SafeArea(
+      ),
+    );
+  }
+
+  /// 构建渐变背景
+  BoxDecoration _buildGradientBackground(BuildContext context) {
+    return BoxDecoration(
+      gradient: LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [
+          Theme.of(context).colorScheme.primary.withOpacity(0.1),
+          Theme.of(context).colorScheme.secondary.withOpacity(0.05),
+          Theme.of(context).colorScheme.surface,
+        ],
+        stops: const [0.0, 0.5, 1.0],
+      ),
+    );
+  }
+
+  /// 移动端布局
+  Widget _buildMobileLayout(BuildContext context) {
+    return Column(
+      children: [
+        _buildHeader(context),
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                _buildDeviceInfoCard(context),
+                const SizedBox(height: 32),
+                _buildModeSelection(context, isVertical: true),
+                const SizedBox(height: 24),
+                _buildFooter(context),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// 平板布局
+  Widget _buildTabletLayout(BuildContext context) {
+    return Column(
+      children: [
+        _buildHeader(context),
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              children: [
+                _buildDeviceInfoCard(context),
+                const SizedBox(height: 40),
+                _buildModeSelection(context, isVertical: false),
+                const SizedBox(height: 32),
+                _buildFooter(context),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// 桌面端布局
+  Widget _buildDesktopLayout(BuildContext context) {
+    return Row(
+      children: [
+        // 左侧设备信息
+        Expanded(
+          flex: 1,
+          child: Container(
+            padding: const EdgeInsets.all(32),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _buildDeviceInfoCard(context),
+                const SizedBox(height: 24),
+                _buildFooter(context),
+              ],
+            ),
+          ),
+        ),
+        // 右侧模式选择
+        Expanded(
+          flex: 2,
+          child: Container(
+            padding: const EdgeInsets.all(32),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _buildHeader(context, showAppBar: false),
+                const SizedBox(height: 40),
+                _buildModeSelection(context, isVertical: false),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// 构建头部
+  Widget _buildHeader(BuildContext context, {bool showAppBar = true}) {
+    if (!showAppBar) {
+      return Column(
+        children: [
+          Text(
+            'Universal Remote Control',
+            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '选择工作模式',
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.wifi,
+            color: Theme.of(context).colorScheme.primary,
+            size: 28,
+          ),
+          const SizedBox(width: 12),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Universal Remote Control',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+              ),
+              Text(
+                '跨平台远程控制',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 构建设备信息卡片
+  Widget _buildDeviceInfoCard(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      constraints: const BoxConstraints(maxWidth: 400),
+      child: Card(
+        elevation: 8,
+        shadowColor: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3),
+                Theme.of(context).colorScheme.surface,
+              ],
+            ),
+          ),
+          padding: ResponsiveHelper.responsive(
+            context,
+            mobile: const EdgeInsets.all(24),
+            tablet: const EdgeInsets.all(32),
+          ),
           child: Column(
             children: [
-              const SizedBox(height: 40),
-              
-              // 设备信息卡片
-              Card(
-                margin: const EdgeInsets.symmetric(horizontal: 20),
-                elevation: 4,
-                child: Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    children: [
-                      Icon(
-                        _getDeviceIcon(_localDevice!.type),
-                        size: 64,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        _localDevice!.name,
-                        style: Theme.of(context).textTheme.headlineSmall,
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        _getDeviceTypeName(_localDevice!.type),
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Theme.of(context).colorScheme.secondary,
-                        ),
-                      ),
-                    ],
-                  ),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  _getDeviceIcon(_localDevice!.type),
+                  size: ResponsiveHelper.getIconSize(context),
+                  color: Theme.of(context).colorScheme.primary,
                 ),
               ),
-
-              const SizedBox(height: 40),
-
-              // 模式选择标题
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Text(
-                  '选择模式',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-
               const SizedBox(height: 20),
-
-              // 模式选择按钮
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    children: [
-                      Expanded(
-                        child: _buildModeCard(
-                          context,
-                          icon: Icons.gamepad_outlined,
-                          title: '控制端模式',
-                          description: '使用此设备控制其他设备',
-                          color: Colors.blue,
-                          onTap: () => _enterControllerMode(context),
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      Expanded(
-                        child: _buildModeCard(
-                          context,
-                          icon: Icons.desktop_windows_outlined,
-                          title: '被控端模式',
-                          description: '允许其他设备控制此设备',
-                          color: Colors.green,
-                          onTap: () => _enterControlledMode(context),
-                        ),
-                      ),
-                    ],
-                  ),
+              Text(
+                _localDevice!.name,
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
                 ),
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
               ),
-
-              // 底部信息
-              Padding(
-                padding: const EdgeInsets.all(20),
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.secondaryContainer,
+                  borderRadius: BorderRadius.circular(20),
+                ),
                 child: Text(
-                  '基于局域网的跨平台远程控制',
-                  style: Theme.of(context).textTheme.bodySmall,
-                  textAlign: TextAlign.center,
+                  _getDeviceTypeName(_localDevice!.type),
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onSecondaryContainer,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ),
             ],
@@ -199,56 +351,163 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  /// 构建模式选择卡片
-  Widget _buildModeCard(
+  /// 构建模式选择
+  Widget _buildModeSelection(BuildContext context, {required bool isVertical}) {
+    final children = [
+      Expanded(
+        child: _buildEnhancedModeCard(
+          context,
+          icon: Icons.gamepad_outlined,
+          title: '控制端模式',
+          description: '使用此设备控制其他设备',
+          gradient: [Colors.blue.shade400, Colors.blue.shade600],
+          onTap: () => _enterControllerMode(context),
+        ),
+      ),
+      SizedBox(
+        width: isVertical ? 0 : 20,
+        height: isVertical ? 20 : 0,
+      ),
+      Expanded(
+        child: _buildEnhancedModeCard(
+          context,
+          icon: Icons.desktop_windows_outlined,
+          title: '被控端模式',
+          description: '允许其他设备控制此设备',
+          gradient: [Colors.green.shade400, Colors.green.shade600],
+          onTap: () => _enterControlledMode(context),
+        ),
+      ),
+    ];
+
+    return Container(
+      constraints: const BoxConstraints(maxWidth: 800),
+      child: isVertical
+          ? Column(children: children)
+          : Row(children: children),
+    );
+  }
+
+  /// 构建增强的模式选择卡片
+  Widget _buildEnhancedModeCard(
     BuildContext context, {
     required IconData icon,
     required String title,
     required String description,
-    required Color color,
+    required List<Color> gradient,
     required VoidCallback onTap,
   }) {
-    return Card(
-      elevation: 4,
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                color.withOpacity(0.1),
-                color.withOpacity(0.05),
-              ],
+    return AppAnimations.buildTapAnimation(
+      onTap: onTap,
+      child: Container(
+        height: ResponsiveHelper.responsive(
+          context,
+          mobile: 160,
+          tablet: 180,
+          desktop: 200,
+        ),
+        child: Card(
+          elevation: 6,
+          shadowColor: gradient.first.withOpacity(0.3),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(16),
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    gradient.first.withOpacity(0.1),
+                    gradient.last.withOpacity(0.05),
+                  ],
+                ),
+              ),
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: gradient.first.withOpacity(0.2),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      icon,
+                      size: ResponsiveHelper.responsive(
+                        context,
+                        mobile: 32,
+                        tablet: 36,
+                        desktop: 40,
+                      ),
+                      color: gradient.first,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    title,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: gradient.first,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    description,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                    ),
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
             ),
           ),
-          child: Column(
+        ),
+      ),
+    );
+  }
+
+  /// 构建底部信息
+  Widget _buildFooter(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(
-                icon,
-                size: 64,
-                color: color,
+                Icons.security,
+                size: 16,
+                color: Theme.of(context).colorScheme.primary,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(width: 8),
               Text(
-                title,
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: color,
+                '基于局域网的安全连接',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                 ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                description,
-                style: Theme.of(context).textTheme.bodyMedium,
-                textAlign: TextAlign.center,
               ),
             ],
           ),
-        ),
+          const SizedBox(height: 8),
+          Text(
+            '支持 Windows • macOS • Linux • Android',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
       ),
     );
   }
@@ -259,8 +518,10 @@ class _HomePageState extends State<HomePage> {
     
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (context) => DeviceListPage(localDevice: updatedDevice),
+      AppAnimations.createRoute(
+        page: DeviceListPage(localDevice: updatedDevice),
+        type: RouteTransitionType.slideAndFade,
+        direction: SlideDirection.fromRight,
       ),
     );
   }
@@ -271,8 +532,10 @@ class _HomePageState extends State<HomePage> {
     
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (context) => ControlledPage(localDevice: updatedDevice),
+      AppAnimations.createRoute(
+        page: ControlledPage(localDevice: updatedDevice),
+        type: RouteTransitionType.slideAndFade,
+        direction: SlideDirection.fromLeft,
       ),
     );
   }
