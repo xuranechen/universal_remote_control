@@ -4,7 +4,7 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:web_socket_channel/io.dart';
 import 'package:logger/logger.dart';
 import '../models/control_event.dart';
-import '../models/connection_state.dart';
+import '../models/connection_state.dart' as remote;
 import '../core/protocol.dart';
 
 /// WebSocket 通信服务
@@ -18,25 +18,25 @@ class WebSocketService {
   
   final StreamController<ControlEvent> _eventController =
       StreamController<ControlEvent>.broadcast();
-  final StreamController<ConnectionState> _stateController =
-      StreamController<ConnectionState>.broadcast();
+  final StreamController<remote.RemoteConnectionState> _stateController =
+      StreamController<remote.RemoteConnectionState>.broadcast();
   
   Timer? _heartbeatTimer;
-  ConnectionState _currentState = ConnectionState.disconnected();
+  remote.RemoteConnectionState _currentState = remote.RemoteConnectionState.disconnected();
 
   /// 接收到的事件流
   Stream<ControlEvent> get eventStream => _eventController.stream;
 
   /// 连接状态流
-  Stream<ConnectionState> get stateStream => _stateController.stream;
+  Stream<remote.RemoteConnectionState> get stateStream => _stateController.stream;
 
   /// 当前连接状态
-  ConnectionState get currentState => _currentState;
+  remote.RemoteConnectionState get currentState => _currentState;
 
   /// 作为服务器启动（被控端）
   Future<void> startServer({int port = defaultPort}) async {
     try {
-      _updateState(ConnectionState.connecting());
+      _updateState(remote.RemoteConnectionState.connecting());
       
       _server = await HttpServer.bind(InternetAddress.anyIPv4, port);
       _logger.i('WebSocket服务器已启动，端口: $port');
@@ -46,18 +46,18 @@ class WebSocketService {
           _clientSocket = await WebSocketTransformer.upgrade(request);
           _logger.i('客户端已连接');
           
-          _updateState(ConnectionState.connected('client'));
+          _updateState(remote.RemoteConnectionState.connected('client'));
           _setupHeartbeat();
           
           _clientSocket!.listen(
             _handleMessage,
             onError: (error) {
               _logger.e('WebSocket错误: $error');
-              _updateState(ConnectionState.error(error.toString()));
+              _updateState(remote.RemoteConnectionState.error(error.toString()));
             },
             onDone: () {
               _logger.i('客户端已断开');
-              _updateState(ConnectionState.disconnected());
+              _updateState(remote.RemoteConnectionState.disconnected());
               _cleanup();
             },
           );
@@ -65,7 +65,7 @@ class WebSocketService {
       });
     } catch (e) {
       _logger.e('启动WebSocket服务器失败: $e');
-      _updateState(ConnectionState.error(e.toString()));
+      _updateState(remote.RemoteConnectionState.error(e.toString()));
       rethrow;
     }
   }
@@ -73,7 +73,7 @@ class WebSocketService {
   /// 作为客户端连接（控制端）
   Future<void> connectToServer(String host, {int port = defaultPort}) async {
     try {
-      _updateState(ConnectionState.connecting());
+      _updateState(remote.RemoteConnectionState.connecting());
       
       final uri = Uri.parse('ws://$host:$port');
       _channel = IOWebSocketChannel.connect(uri);
@@ -84,22 +84,22 @@ class WebSocketService {
         _handleMessage,
         onError: (error) {
           _logger.e('WebSocket错误: $error');
-          _updateState(ConnectionState.error(error.toString()));
+          _updateState(remote.RemoteConnectionState.error(error.toString()));
         },
         onDone: () {
           _logger.i('已断开连接');
-          _updateState(ConnectionState.disconnected());
+          _updateState(remote.RemoteConnectionState.disconnected());
           _cleanup();
         },
       );
 
-      _updateState(ConnectionState.connected(host));
+      _updateState(remote.RemoteConnectionState.connected(host));
       _setupHeartbeat();
       
       _logger.i('已连接到服务器');
     } catch (e) {
       _logger.e('连接服务器失败: $e');
-      _updateState(ConnectionState.error(e.toString()));
+      _updateState(remote.RemoteConnectionState.error(e.toString()));
       rethrow;
     }
   }
@@ -176,7 +176,7 @@ class WebSocketService {
   }
 
   /// 更新连接状态
-  void _updateState(ConnectionState state) {
+  void _updateState(remote.RemoteConnectionState state) {
     _currentState = state;
     _stateController.add(state);
   }
@@ -201,7 +201,7 @@ class WebSocketService {
     _clientSocket = null;
     _server = null;
     
-    _updateState(ConnectionState.disconnected());
+    _updateState(remote.RemoteConnectionState.disconnected());
   }
 
   /// 释放资源

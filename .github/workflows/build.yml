@@ -51,7 +51,7 @@ jobs:
         copy QUICKSTART.md release_windows\
     
     - name: 上传构建产物
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: windows-build
         path: release_windows/
@@ -122,7 +122,7 @@ jobs:
         chmod +x release_linux/run.sh
     
     - name: 上传构建产物
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: linux-build
         path: release_linux/
@@ -171,7 +171,7 @@ jobs:
         cp QUICKSTART.md release_macos/
     
     - name: 上传构建产物
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: macos-build
         path: release_macos/
@@ -221,14 +221,14 @@ jobs:
         cp QUICKSTART.md release_android/
     
     - name: 上传APK
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: android-apk
         path: release_android/UniversalRemoteControl.apk
         retention-days: 7
     
     - name: 上传App Bundle
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: android-bundle
         path: release_android/UniversalRemoteControl.aab

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/device_info.dart';
-import '../../models/connection_state.dart';
+import '../../models/connection_state.dart' as remote;
 import '../../services/websocket_service.dart';
 import '../../services/input_capture_service.dart';
 import '../widgets/virtual_touchpad.dart';
@@ -23,7 +23,7 @@ class ControllerPage extends StatefulWidget {
 }
 
 class _ControllerPageState extends State<ControllerPage> {
-  ConnectionState _connectionState = ConnectionState.disconnected();
+  remote.RemoteConnectionState _connectionState = remote.RemoteConnectionState.disconnected();
   bool _gyroEnabled = false;
   int _selectedTab = 0;
 
@@ -167,15 +167,15 @@ class _ControllerPageState extends State<ControllerPage> {
     String text;
 
     switch (_connectionState.status) {
-      case ConnectionStatus.connected:
+      case remote.RemoteConnectionStatus.connected:
         color = Colors.green;
         text = '已连接';
         break;
-      case ConnectionStatus.connecting:
+      case remote.RemoteConnectionStatus.connecting:
         color = Colors.orange;
         text = '连接中';
         break;
-      case ConnectionStatus.error:
+      case remote.RemoteConnectionStatus.error:
         color = Colors.red;
         text = '错误';
         break;

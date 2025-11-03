@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'dart:io';
 import '../../models/device_info.dart';
-import '../../core/device_discovery.dart';
-import 'controller_page.dart';
 import 'controlled_page.dart';
 import 'device_list_page.dart';
 

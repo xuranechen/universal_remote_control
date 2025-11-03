@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:network_info_plus/network_info_plus.dart';
 import '../../models/device_info.dart';
-import '../../models/connection_state.dart';
+import '../../models/connection_state.dart' as remote;
 import '../../services/websocket_service.dart';
 import '../../services/input_simulator_service.dart';
 
@@ -20,7 +20,7 @@ class ControlledPage extends StatefulWidget {
 }
 
 class _ControlledPageState extends State<ControlledPage> {
-  ConnectionState _connectionState = ConnectionState.disconnected();
+  remote.RemoteConnectionState _connectionState = remote.RemoteConnectionState.disconnected();
   String? _localIp;
   int _eventCount = 0;
   bool _isServerRunning = false;

@@ -16,7 +16,6 @@ jobs:
   create-release:
     runs-on: ubuntu-latest
     outputs:
-      upload_url: ${{ steps.create_release.outputs.upload_url }}
       version: ${{ steps.get_version.outputs.version }}
     
     steps:
@@ -34,12 +33,10 @@ jobs:
     
     - name: 创建Release
       id: create_release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      uses: softprops/action-gh-release@v1
       with:
         tag_name: v${{ steps.get_version.outputs.version }}
-        release_name: Universal Remote Control v${{ steps.get_version.outputs.version }}
+        name: Universal Remote Control v${{ steps.get_version.outputs.version }}
         body: |
           ## 🎉 Universal Remote Control v${{ steps.get_version.outputs.version }}
           
@@ -69,6 +66,8 @@ jobs:
           - Android 7.0+ (API 24+)
         draft: false
         prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   # Windows Release构建
   release-windows:
@@ -111,14 +110,14 @@ jobs:
         Compress-Archive -Path release_windows\* -DestinationPath universal_remote_control_windows_v${{ needs.create-release.outputs.version }}.zip
     
     - name: 上传Windows Release
-      uses: actions/upload-release-asset@v1
+      uses: softprops/action-gh-release@v1
+      with:
+        files: universal_remote_control_windows_v${{ needs.create-release.outputs.version }}.zip
+        tag_name: v${{ needs.create-release.outputs.version }}
+        draft: false
+        generate_release_notes: false
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ needs.create-release.outputs.upload_url }}
-        asset_path: ./universal_remote_control_windows_v${{ needs.create-release.outputs.version }}.zip
-        asset_name: universal_remote_control_windows_v${{ needs.create-release.outputs.version }}.zip
-        asset_content_type: application/zip
 
   # Linux Release构建
   release-linux:
@@ -174,14 +173,14 @@ jobs:
         tar -czf universal_remote_control_linux_v${{ needs.create-release.outputs.version }}.tar.gz -C release_linux .
     
     - name: 上传Linux Release
-      uses: actions/upload-release-asset@v1
+      uses: softprops/action-gh-release@v1
+      with:
+        files: universal_remote_control_linux_v${{ needs.create-release.outputs.version }}.tar.gz
+        tag_name: v${{ needs.create-release.outputs.version }}
+        draft: false
+        generate_release_notes: false
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ needs.create-release.outputs.upload_url }}
-        asset_path: ./universal_remote_control_linux_v${{ needs.create-release.outputs.version }}.tar.gz
-        asset_name: universal_remote_control_linux_v${{ needs.create-release.outputs.version }}.tar.gz
-        asset_content_type: application/gzip
 
   # macOS Release构建
   release-macos:
@@ -225,14 +224,14 @@ jobs:
         zip -r ../universal_remote_control_macos_v${{ needs.create-release.outputs.version }}.zip .
     
     - name: 上传macOS Release
-      uses: actions/upload-release-asset@v1
+      uses: softprops/action-gh-release@v1
+      with:
+        files: universal_remote_control_macos_v${{ needs.create-release.outputs.version }}.zip
+        tag_name: v${{ needs.create-release.outputs.version }}
+        draft: false
+        generate_release_notes: false
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ needs.create-release.outputs.upload_url }}
-        asset_path: ./universal_remote_control_macos_v${{ needs.create-release.outputs.version }}.zip
-        asset_name: universal_remote_control_macos_v${{ needs.create-release.outputs.version }}.zip
-        asset_content_type: application/zip
 
   # Android Release构建
   release-android:
@@ -263,12 +262,12 @@ jobs:
         mv build/app/outputs/flutter-apk/app-release.apk universal_remote_control_v${{ needs.create-release.outputs.version }}.apk
     
     - name: 上传Android APK
-      uses: actions/upload-release-asset@v1
+      uses: softprops/action-gh-release@v1
+      with:
+        files: universal_remote_control_v${{ needs.create-release.outputs.version }}.apk
+        tag_name: v${{ needs.create-release.outputs.version }}
+        draft: false
+        generate_release_notes: false
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ needs.create-release.outputs.upload_url }}
-        asset_path: ./universal_remote_control_v${{ needs.create-release.outputs.version }}.apk
-        asset_name: universal_remote_control_v${{ needs.create-release.outputs.version }}.apk
-        asset_content_type: application/vnd.android.package-archive
 

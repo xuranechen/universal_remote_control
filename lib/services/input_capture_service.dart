@@ -17,7 +17,6 @@ class InputCaptureService {
   Stream<ControlEvent> get eventStream => _eventController.stream;
 
   bool _isCapturing = false;
-  bool _gyroEnabled = false;
 
   // 陀螺仪灵敏度配置
   double gyroPitchSensitivity = 10.0;
@@ -32,7 +31,6 @@ class InputCaptureService {
     }
 
     _isCapturing = true;
-    _gyroEnabled = enableGyro;
 
     if (enableGyro) {
       _startGyroCapture();
@@ -57,7 +55,7 @@ class InputCaptureService {
 
   /// 开始陀螺仪捕获
   void _startGyroCapture() {
-    _gyroSubscription = gyroscopeEvents.listen(
+    _gyroSubscription = gyroscopeEventStream().listen(
       (GyroscopeEvent event) {
         _handleGyroEvent(event);
       },
@@ -77,7 +75,7 @@ class InputCaptureService {
 
     double pitch = event.x;
     double yaw = event.y;
-    double roll = event.z;
+    // double roll = event.z; // 未使用，已移除
 
     // 应用死区
     if (pitch.abs() < gyroDeadZone) pitch = 0;
