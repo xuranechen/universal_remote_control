@@ -51,15 +51,14 @@ class DeviceDiscovery {
         maxBatchSize: 10,
       );
 
-    // 获取本地IP地址并更新设备信息
-    final localIP = await PlatformHelper.getLocalIP();
-    _localDevice = localDevice.copyWith(
-      ip: localIP ?? '0.0.0.0',
-      timestamp: DateTime.now().millisecondsSinceEpoch,
-    );
-    _isRunning = true;
+      // 获取本地IP地址并更新设备信息
+      final localIP = await PlatformHelper.getLocalIP();
+      _localDevice = localDevice.copyWith(
+        ip: localIP ?? '0.0.0.0',
+        timestamp: DateTime.now().millisecondsSinceEpoch,
+      );
+      _isRunning = true;
 
-    try {
       // 绑定UDP socket
       _socket = await RawDatagramSocket.bind(InternetAddress.anyIPv4, discoveryPort);
       _socket!.broadcastEnabled = true;
