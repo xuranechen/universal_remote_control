@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: '版本�?(例如: 1.0.0)'
+        description: 'Version number (e.g. 1.0.0)'
         required: true
         type: string
 
@@ -19,10 +19,10 @@ jobs:
       version: ${{ steps.get_version.outputs.version }}
     
     steps:
-      - name: 检出代�?
+      - name: Checkout code
         uses: actions/checkout@v4
       
-      - name: 获取版本�?
+      - name: Get version
         id: get_version
         run: |
           if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
@@ -31,53 +31,46 @@ jobs:
             VERSION=${GITHUB_REF#refs/tags/v}
           fi
           echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "版本�? $VERSION"
+          echo "Version: $VERSION"
       
-      - name: 创建Release
+      - name: Create Release
         id: create_release
-        uses: actions/create-release@v1
+        uses: softprops/action-gh-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: v${{ steps.get_version.outputs.version }}
-          release_name: Universal Remote Control v${{ steps.get_version.outputs.version }}
+          name: Universal Remote Control v${{ steps.get_version.outputs.version }}
           draft: false
           prerelease: false
+          generate_release_notes: true
           body: |
-            ## 🎉 Universal Remote Control v${{ steps.get_version.outputs.version }}
+            ## Universal Remote Control v${{ steps.get_version.outputs.version }}
             
-            ### 📦 下载
+            ### Download
             
-            请选择适合您操作系统的版本�?
+            Choose the version for your operating system:
             
             - **Windows**: universal_remote_control_windows_v${{ steps.get_version.outputs.version }}.zip
             - **Linux**: universal_remote_control_linux_v${{ steps.get_version.outputs.version }}.tar.gz
             - **macOS**: universal_remote_control_macos_v${{ steps.get_version.outputs.version }}.zip
             - **Android APK**: universal_remote_control_v${{ steps.get_version.outputs.version }}.apk
             
-            ### �?主要功能
+            ### Features
             
-            - 🎮 跨平台远程控制（Windows/Linux/macOS/Android�?
-            - 📱 虚拟触摸�?
-            - 🎯 陀螺仪控制
-            - ⌨️ 键盘和鼠标模�?
-            - 🌐 基于WebSocket的实时通信
-            - 🔍 自动设备发现
+            - Cross-platform remote control (Windows/Linux/macOS/Android)
+            - Virtual touchpad
+            - Gyroscope control
+            - Keyboard and mouse simulation
+            - Real-time communication via WebSocket
+            - Automatic device discovery
             
-            ### 📖 使用说明
-            
-            请查看项目的 [快速入门指南](https://github.com/${{ github.repository }}/blob/main/QUICKSTART.md) 了解详细使用方法�?
-            
-            ### 💻 系统要求
+            ### System Requirements
             
             - **Windows**: Windows 10/11 (x64)
-            - **Linux**: Ubuntu 20.04+ 或其他现代发行版
+            - **Linux**: Ubuntu 20.04+ or other modern distributions
             - **macOS**: macOS 10.14+
             - **Android**: Android 7.0+ (API 24+)
-            
-            ### 🐛 问题反馈
-            
-            如果遇到问题，请�?[Issues](https://github.com/${{ github.repository }}/issues) 中反馈�?
 
   build-windows:
     needs: create-release
@@ -85,32 +78,29 @@ jobs:
     timeout-minutes: 60
     
     steps:
-      - name: 检出代�?
+      - name: Checkout code
         uses: actions/checkout@v4
       
-      - name: 设置Flutter
+      - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.16.0'
           channel: 'stable'
           cache: true
       
-      - name: 添加Windows桌面支持
+      - name: Add Windows desktop support
         run: flutter create --platforms=windows .
-
       
-      - name: 获取依赖
+      - name: Get dependencies
         run: flutter pub get
-
       
-      - name: 运行代码生成
+      - name: Run code generation
         run: flutter pub run build_runner build --delete-conflicting-outputs
-
       
-      - name: 设置Visual Studio环境
+      - name: Setup Visual Studio
         uses: microsoft/setup-msbuild@v1.1
       
-      - name: 编译Windows原生�?
+      - name: Build Windows native library
         run: |
           cd native/windows
           mkdir build
@@ -118,22 +108,19 @@ jobs:
           cmake .. -A x64
           cmake --build . --config Release
           cd ../../..
-
         shell: cmd
       
-      - name: 复制原生�?
+      - name: Copy native library
         run: |
           if (Test-Path "native\windows\build\bin\Release\input_simulator_windows.dll") {
             Copy-Item "native\windows\build\bin\Release\input_simulator_windows.dll" -Destination "."
           }
-
         shell: pwsh
       
-      - name: 构建Windows应用
+      - name: Build Windows app
         run: flutter build windows --release
-
       
-      - name: 创建发布�?
+      - name: Create release package
         run: |
           $version = "${{ needs.create-release.outputs.version }}"
           $releaseDir = "release_windows"
@@ -142,20 +129,16 @@ jobs:
           Copy-Item "README.md" -Destination $releaseDir -ErrorAction SilentlyContinue
           Copy-Item "QUICKSTART.md" -Destination $releaseDir -ErrorAction SilentlyContinue
           
-          # 创建ZIP
           Compress-Archive -Path "$releaseDir\*" -DestinationPath "universal_remote_control_windows_v$version.zip"
-
         shell: pwsh
       
-      - name: 上传到Release
-        uses: actions/upload-release-asset@v1
+      - name: Upload to Release
+        uses: softprops/action-gh-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{ needs.create-release.outputs.upload_url }}
-          asset_path: universal_remote_control_windows_v${{ needs.create-release.outputs.version }}.zip
-          asset_name: universal_remote_control_windows_v${{ needs.create-release.outputs.version }}.zip
-          asset_content_type: application/zip
+          tag_name: v${{ needs.create-release.outputs.version }}
+          files: universal_remote_control_windows_v${{ needs.create-release.outputs.version }}.zip
 
   build-linux:
     needs: create-release
@@ -163,34 +146,31 @@ jobs:
     timeout-minutes: 60
     
     steps:
-      - name: 检出代�?
+      - name: Checkout code
         uses: actions/checkout@v4
       
-      - name: 安装依赖
+      - name: Install dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev libstdc++-12-dev
       
-      - name: 设置Flutter
+      - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.16.0'
           channel: 'stable'
           cache: true
       
-      - name: 添加Linux桌面支持
+      - name: Add Linux desktop support
         run: flutter create --platforms=linux .
-
       
-      - name: 获取依赖
+      - name: Get dependencies
         run: flutter pub get
-
       
-      - name: 运行代码生成
+      - name: Run code generation
         run: flutter pub run build_runner build --delete-conflicting-outputs
-
       
-      - name: 编译Linux原生�?
+      - name: Build Linux native library
         run: |
           cd native/linux
           mkdir -p build
@@ -198,18 +178,15 @@ jobs:
           cmake ..
           cmake --build . --config Release
           cd ../../..
-
       
-      - name: 复制原生�?
+      - name: Copy native library
         run: |
           [ -f "native/linux/build/libinput_simulator_linux.so" ] && cp native/linux/build/libinput_simulator_linux.so . || true
-
       
-      - name: 构建Linux应用
+      - name: Build Linux app
         run: flutter build linux --release
-
       
-      - name: 创建发布�?
+      - name: Create release package
         run: |
           version="${{ needs.create-release.outputs.version }}"
           releaseDir="release_linux"
@@ -218,19 +195,15 @@ jobs:
           [ -f README.md ] && cp README.md "$releaseDir/" || true
           [ -f QUICKSTART.md ] && cp QUICKSTART.md "$releaseDir/" || true
           
-          # 创建tar.gz
           tar -czf "universal_remote_control_linux_v${version}.tar.gz" -C "$releaseDir" .
-
       
-      - name: 上传到Release
-        uses: actions/upload-release-asset@v1
+      - name: Upload to Release
+        uses: softprops/action-gh-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{ needs.create-release.outputs.upload_url }}
-          asset_path: universal_remote_control_linux_v${{ needs.create-release.outputs.version }}.tar.gz
-          asset_name: universal_remote_control_linux_v${{ needs.create-release.outputs.version }}.tar.gz
-          asset_content_type: application/gzip
+          tag_name: v${{ needs.create-release.outputs.version }}
+          files: universal_remote_control_linux_v${{ needs.create-release.outputs.version }}.tar.gz
 
   build-macos:
     needs: create-release
@@ -238,29 +211,26 @@ jobs:
     timeout-minutes: 60
     
     steps:
-      - name: 检出代�?
+      - name: Checkout code
         uses: actions/checkout@v4
       
-      - name: 设置Flutter
+      - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.16.0'
           channel: 'stable'
           cache: true
       
-      - name: 添加macOS桌面支持
+      - name: Add macOS desktop support
         run: flutter create --platforms=macos .
-
       
-      - name: 获取依赖
+      - name: Get dependencies
         run: flutter pub get
-
       
-      - name: 运行代码生成
+      - name: Run code generation
         run: flutter pub run build_runner build --delete-conflicting-outputs
-
       
-      - name: 编译macOS原生�?
+      - name: Build macOS native library
         run: |
           cd native/macos
           mkdir -p build
@@ -268,18 +238,15 @@ jobs:
           cmake ..
           cmake --build . --config Release
           cd ../../..
-
       
-      - name: 复制原生�?
+      - name: Copy native library
         run: |
           [ -f "native/macos/build/libinput_simulator_macos.dylib" ] && cp native/macos/build/libinput_simulator_macos.dylib . || true
-
       
-      - name: 构建macOS应用
+      - name: Build macOS app
         run: flutter build macos --release
-
       
-      - name: 创建发布�?
+      - name: Create release package
         run: |
           version="${{ needs.create-release.outputs.version }}"
           releaseDir="release_macos"
@@ -288,21 +255,17 @@ jobs:
           [ -f README.md ] && cp README.md "$releaseDir/" || true
           [ -f QUICKSTART.md ] && cp QUICKSTART.md "$releaseDir/" || true
           
-          # 创建ZIP
           cd "$releaseDir"
           zip -r "../universal_remote_control_macos_v${version}.zip" .
           cd ..
-
       
-      - name: 上传到Release
-        uses: actions/upload-release-asset@v1
+      - name: Upload to Release
+        uses: softprops/action-gh-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{ needs.create-release.outputs.upload_url }}
-          asset_path: universal_remote_control_macos_v${{ needs.create-release.outputs.version }}.zip
-          asset_name: universal_remote_control_macos_v${{ needs.create-release.outputs.version }}.zip
-          asset_content_type: application/zip
+          tag_name: v${{ needs.create-release.outputs.version }}
+          files: universal_remote_control_macos_v${{ needs.create-release.outputs.version }}.zip
 
   build-android:
     needs: create-release
@@ -310,49 +273,43 @@ jobs:
     timeout-minutes: 60
     
     steps:
-      - name: 检出代�?
+      - name: Checkout code
         uses: actions/checkout@v4
       
-      - name: 设置Java
+      - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
           java-version: '17'
       
-      - name: 设置Flutter
+      - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.16.0'
           channel: 'stable'
           cache: true
       
-      - name: 获取依赖
+      - name: Get dependencies
         run: flutter pub get
-
       
-      - name: 运行代码生成
+      - name: Run code generation
         run: flutter pub run build_runner build --delete-conflicting-outputs
-
       
-      - name: 构建APK
+      - name: Build APK
         run: flutter build apk --release
-
       
-      - name: 重命名APK
+      - name: Rename APK
         run: |
           version="${{ needs.create-release.outputs.version }}"
           cp build/app/outputs/flutter-apk/app-release.apk "universal_remote_control_v${version}.apk"
-
       
-      - name: 上传APK到Release
-        uses: actions/upload-release-asset@v1
+      - name: Upload APK to Release
+        uses: softprops/action-gh-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{ needs.create-release.outputs.upload_url }}
-          asset_path: universal_remote_control_v${{ needs.create-release.outputs.version }}.apk
-          asset_name: universal_remote_control_v${{ needs.create-release.outputs.version }}.apk
-          asset_content_type: application/vnd.android.package-archive
+          tag_name: v${{ needs.create-release.outputs.version }}
+          files: universal_remote_control_v${{ needs.create-release.outputs.version }}.apk
 
   release-summary:
     needs: [create-release, build-windows, build-linux, build-macos, build-android]
@@ -360,17 +317,17 @@ jobs:
     if: always()
     
     steps:
-      - name: 发布摘要
+      - name: Release summary
         run: |
-          echo "# 发布摘要" >> $GITHUB_STEP_SUMMARY
+          echo "# Release Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "## 版本: v${{ needs.create-release.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "## Version: v${{ needs.create-release.outputs.version }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "## 构建状�? >> $GITHUB_STEP_SUMMARY
+          echo "## Build Status" >> $GITHUB_STEP_SUMMARY
           echo "- Windows: ${{ needs.build-windows.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- Linux: ${{ needs.build-linux.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- macOS: ${{ needs.build-macos.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- Android: ${{ needs.build-android.result }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "## 下载" >> $GITHUB_STEP_SUMMARY
-          echo "请前往 [Releases](https://github.com/${{ github.repository }}/releases/tag/v${{ needs.create-release.outputs.version }}) 页面下载�? >> $GITHUB_STEP_SUMMARY
+          echo "## Download" >> $GITHUB_STEP_SUMMARY
+          echo "Visit [Releases](https://github.com/${{ github.repository }}/releases/tag/v${{ needs.create-release.outputs.version }}) page to download." >> $GITHUB_STEP_SUMMARY
