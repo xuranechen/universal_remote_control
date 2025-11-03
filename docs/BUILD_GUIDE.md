@@ -73,12 +73,29 @@ git clone <your-repo>
 cd universal_remote_control
 ```
 
-### 2. 安装Flutter依赖
+### 2. 添加桌面平台支持（重要！）
+
+项目需要Flutter的桌面平台支持。首次构建前，必须运行以下命令：
+
+```bash
+# 添加Windows平台支持
+flutter create --platforms=windows .
+
+# 添加Linux平台支持
+flutter create --platforms=linux .
+
+# 添加macOS平台支持
+flutter create --platforms=macos .
+```
+
+> **注意**: 这一步会创建平台特定的目录（`windows/`, `linux/`, `macos/`），这些目录包含Flutter桌面应用的启动器和配置文件。`native/` 目录中的原生库是单独的。
+
+### 3. 安装Flutter依赖
 ```bash
 flutter pub get
 ```
 
-### 3. 生成代码（JSON序列化）
+### 4. 生成代码（JSON序列化）
 ```bash
 flutter pub run build_runner build --delete-conflicting-outputs
 ```
@@ -247,7 +264,29 @@ flutter build ios --release
 
 ## 常见问题
 
-### Q1: 编译原生库时找不到头文件？
+### Q1: "No Windows desktop project configured" 错误？
+
+**错误信息**:
+```
+No Windows desktop project configured. See https://docs.flutter.dev/desktop#add-desktop-support-to-an-existing-flutter-app to learn about adding Windows support to a project.
+```
+
+**原因**: 项目缺少Flutter标准的Windows桌面支持配置。
+
+**解决方案**:
+```bash
+# 添加Windows平台支持
+flutter create --platforms=windows .
+
+# 然后重新构建
+flutter build windows --release
+```
+
+这个命令会创建 `windows/` 目录，包含必要的Flutter Windows应用框架文件。
+
+> **提示**: 对于Linux和macOS平台，使用相应的 `--platforms=linux` 或 `--platforms=macos` 参数。
+
+### Q2: 编译原生库时找不到头文件？
 
 **Windows**: 确保安装了Windows SDK和C++工具。
 
@@ -261,7 +300,7 @@ sudo apt-get install libx11-dev libxtst-dev
 xcode-select --install
 ```
 
-### Q2: Flutter找不到原生库？
+### Q3: Flutter找不到原生库？
 
 确保原生库文件在正确的位置：
 - Windows: `input_simulator_windows.dll` 在项目根目录或system32
@@ -277,14 +316,14 @@ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/path/to/lib
 export DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH:/path/to/lib
 ```
 
-### Q3: Android无障碍服务无法启用？
+### Q4: Android无障碍服务无法启用？
 
 1. 检查 `AndroidManifest.xml` 是否正确配置
 2. 检查 `accessibility_service_config.xml` 是否在正确位置
 3. 确认包名是否匹配
 4. 重新安装应用
 
-### Q4: 权限问题？
+### Q5: 权限问题？
 
 **Linux**: 某些发行版需要将用户添加到input组：
 ```bash
@@ -295,13 +334,13 @@ sudo usermod -a -G input $USER
 
 **Android**: 需要手动开启无障碍服务权限。
 
-### Q5: 陀螺仪不工作？
+### Q6: 陀螺仪不工作？
 
 1. 检查设备是否支持陀螺仪
 2. 检查权限是否授予
 3. 在真机上测试（模拟器可能不支持）
 
-### Q6: 网络连接失败？
+### Q7: 网络连接失败？
 
 1. 确保设备在同一局域网
 2. 检查防火墙设置

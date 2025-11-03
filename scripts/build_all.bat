@@ -24,12 +24,27 @@ if %ERRORLEVEL% NEQ 0 (
     exit /b 1
 )
 
-echo [1/5] 清理旧的构建文件...
+echo [1/6] 检查并添加Windows桌面支持...
+if not exist windows (
+    echo 未找到windows目录，正在添加Windows桌面支持...
+    call flutter create --platforms=windows .
+    if %ERRORLEVEL% NEQ 0 (
+        echo [错误] 添加Windows桌面支持失败
+        pause
+        exit /b 1
+    )
+    echo Windows桌面支持已添加
+) else (
+    echo Windows桌面支持已存在
+)
+echo.
+
+echo [2/6] 清理旧的构建文件...
 if exist build rmdir /s /q build
 if exist native\windows\build rmdir /s /q native\windows\build
 echo.
 
-echo [2/5] 安装Flutter依赖...
+echo [3/6] 安装Flutter依赖...
 call flutter pub get
 if %ERRORLEVEL% NEQ 0 (
     echo [错误] Flutter依赖安装失败
@@ -38,7 +53,7 @@ if %ERRORLEVEL% NEQ 0 (
 )
 echo.
 
-echo [3/5] 生成代码文件...
+echo [4/6] 生成代码文件...
 call flutter pub run build_runner build --delete-conflicting-outputs
 if %ERRORLEVEL% NEQ 0 (
     echo [错误] 代码生成失败
@@ -47,7 +62,7 @@ if %ERRORLEVEL% NEQ 0 (
 )
 echo.
 
-echo [4/5] 编译Windows原生库...
+echo [5/6] 编译Windows原生库...
 cd native\windows
 mkdir build
 cd build
@@ -72,7 +87,7 @@ copy bin\Release\input_simulator_windows.dll ..\..\..
 cd ..\..\..
 echo.
 
-echo [5/5] 编译Flutter应用...
+echo [6/6] 编译Flutter应用...
 call flutter build windows --release
 if %ERRORLEVEL% NEQ 0 (
     echo [错误] Flutter应用编译失败

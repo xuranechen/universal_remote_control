@@ -47,20 +47,34 @@ if [[ "$PLATFORM" == "linux" ]]; then
     fi
 fi
 
-echo "[1/5] 清理旧的构建文件..."
+echo "[1/6] 检查并添加${PLATFORM}桌面支持..."
+if [ ! -d "$PLATFORM" ]; then
+    echo "未找到${PLATFORM}目录，正在添加${PLATFORM}桌面支持..."
+    flutter create --platforms=$PLATFORM .
+    if [ $? -ne 0 ]; then
+        echo "[错误] 添加${PLATFORM}桌面支持失败"
+        exit 1
+    fi
+    echo "${PLATFORM}桌面支持已添加"
+else
+    echo "${PLATFORM}桌面支持已存在"
+fi
+echo ""
+
+echo "[2/6] 清理旧的构建文件..."
 rm -rf build
 rm -rf native/$PLATFORM/build
 echo ""
 
-echo "[2/5] 安装Flutter依赖..."
+echo "[3/6] 安装Flutter依赖..."
 flutter pub get
 echo ""
 
-echo "[3/5] 生成代码文件..."
+echo "[4/6] 生成代码文件..."
 flutter pub run build_runner build --delete-conflicting-outputs
 echo ""
 
-echo "[4/5] 编译${PLATFORM}原生库..."
+echo "[5/6] 编译${PLATFORM}原生库..."
 cd native/$PLATFORM
 mkdir -p build
 cd build
@@ -72,7 +86,7 @@ cp lib/$LIB_NAME ../../..
 cd ../../..
 echo ""
 
-echo "[5/5] 编译Flutter应用..."
+echo "[6/6] 编译Flutter应用..."
 flutter build $PLATFORM --release
 echo ""
 

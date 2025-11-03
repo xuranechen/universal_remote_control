@@ -5,253 +5,319 @@ on:
     branches: [ main, develop ]
   pull_request:
     branches: [ main ]
-  workflow_dispatch:  # 允许手动触发
+  workflow_dispatch:
 
 jobs:
-  # Windows构建
   build-windows:
     runs-on: windows-latest
+    timeout-minutes: 60
     
     steps:
-    - name: 检出代码
-      uses: actions/checkout@v4
-    
-    - name: 设置Flutter
-      uses: subosito/flutter-action@v2
-      with:
-        flutter-version: '3.16.0'
-        channel: 'stable'
-    
-    - name: Flutter版本检查
-      run: flutter --version
-    
-    - name: 安装依赖
-      run: flutter pub get
-    
-    - name: 生成代码
-      run: flutter pub run build_runner build --delete-conflicting-outputs
-    
-    - name: 编译Windows原生库
-      run: |
-        cd native/windows
-        mkdir build
-        cd build
-        cmake .. -A x64
-        cmake --build . --config Release
-        copy bin\Release\input_simulator_windows.dll ..\..\..
-    
-    - name: 构建Windows应用
-      run: flutter build windows --release
-    
-    - name: 创建发布包
-      run: |
-        mkdir release_windows
-        xcopy /E /I /Y build\windows\runner\Release\* release_windows\
-        copy README.md release_windows\
-        copy QUICKSTART.md release_windows\
-    
-    - name: 上传构建产物
-      uses: actions/upload-artifact@v4
-      with:
-        name: windows-build
-        path: release_windows/
-        retention-days: 7
+      - name: 检出代码
+        uses: actions/checkout@v4
+      
+      - name: 设置Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.16.0'
+          channel: 'stable'
+          cache: true
+      
+      - name: 验证Flutter安装
+        run: |
+          flutter --version
+          flutter doctor -v
+      
+      - name: 添加Windows桌面支持
+        run: flutter create --platforms=windows .
+        working-directory: universal_remote_control
+      
+      - name: 获取依赖
+        run: flutter pub get
+        working-directory: universal_remote_control
+      
+      - name: 运行代码生成
+        run: flutter pub run build_runner build --delete-conflicting-outputs
+        working-directory: universal_remote_control
+      
+      - name: 设置Visual Studio环境
+        uses: microsoft/setup-msbuild@v1.1
+      
+      - name: 编译Windows原生库
+        run: |
+          cd native/windows
+          mkdir build
+          cd build
+          cmake .. -A x64
+          cmake --build . --config Release
+          cd ../../..
+        working-directory: universal_remote_control
+        shell: cmd
+      
+      - name: 复制原生库到项目根目录
+        run: |
+          if (Test-Path "native\windows\build\bin\Release\input_simulator_windows.dll") {
+            Copy-Item "native\windows\build\bin\Release\input_simulator_windows.dll" -Destination "."
+            Write-Host "已复制 input_simulator_windows.dll"
+          } else {
+            Write-Host "警告: 未找到 input_simulator_windows.dll"
+          }
+        working-directory: universal_remote_control
+        shell: pwsh
+      
+      - name: 构建Windows应用
+        run: flutter build windows --release
+        working-directory: universal_remote_control
+      
+      - name: 创建发布包
+        run: |
+          $releaseDir = "release_windows"
+          New-Item -ItemType Directory -Force -Path $releaseDir
+          Copy-Item -Path "build\windows\x64\runner\Release\*" -Destination $releaseDir -Recurse -Force
+          if (Test-Path "README.md") {
+            Copy-Item "README.md" -Destination $releaseDir
+          }
+          if (Test-Path "QUICKSTART.md") {
+            Copy-Item "QUICKSTART.md" -Destination $releaseDir
+          }
+          Write-Host "发布包创建完成: $releaseDir"
+        working-directory: universal_remote_control
+        shell: pwsh
+      
+      - name: 上传构建产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-build
+          path: universal_remote_control/release_windows/
+          retention-days: 7
 
-  # Linux构建
   build-linux:
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     
     steps:
-    - name: 检出代码
-      uses: actions/checkout@v4
-    
-    - name: 安装系统依赖
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y \
-          clang \
-          cmake \
-          ninja-build \
-          pkg-config \
-          libgtk-3-dev \
-          libx11-dev \
-          libxtst-dev \
-          libxext-dev
-    
-    - name: 设置Flutter
-      uses: subosito/flutter-action@v2
-      with:
-        flutter-version: '3.16.0'
-        channel: 'stable'
-    
-    - name: Flutter版本检查
-      run: flutter --version
-    
-    - name: 安装依赖
-      run: flutter pub get
-    
-    - name: 生成代码
-      run: flutter pub run build_runner build --delete-conflicting-outputs
-    
-    - name: 编译Linux原生库
-      run: |
-        cd native/linux
-        mkdir build
-        cd build
-        cmake ..
-        make -j$(nproc)
-        cp lib/libinput_simulator_linux.so ../../..
-    
-    - name: 构建Linux应用
-      run: flutter build linux --release
-    
-    - name: 创建发布包
-      run: |
-        mkdir release_linux
-        cp -r build/linux/x64/release/bundle/* release_linux/
-        cp README.md release_linux/
-        cp QUICKSTART.md release_linux/
-        
-        # 创建启动脚本
-        cat > release_linux/run.sh << 'EOF'
-        #!/bin/bash
-        cd "$(dirname "$0")"
-        export LD_LIBRARY_PATH=.:$LD_LIBRARY_PATH
-        ./universal_remote_control
-        EOF
-        chmod +x release_linux/run.sh
-    
-    - name: 上传构建产物
-      uses: actions/upload-artifact@v4
-      with:
-        name: linux-build
-        path: release_linux/
-        retention-days: 7
+      - name: 检出代码
+        uses: actions/checkout@v4
+      
+      - name: 安装依赖
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev libstdc++-12-dev
+      
+      - name: 设置Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.16.0'
+          channel: 'stable'
+          cache: true
+      
+      - name: 验证Flutter安装
+        run: |
+          flutter --version
+          flutter doctor -v
+      
+      - name: 添加Linux桌面支持
+        run: flutter create --platforms=linux .
+        working-directory: universal_remote_control
+      
+      - name: 获取依赖
+        run: flutter pub get
+        working-directory: universal_remote_control
+      
+      - name: 运行代码生成
+        run: flutter pub run build_runner build --delete-conflicting-outputs
+        working-directory: universal_remote_control
+      
+      - name: 编译Linux原生库
+        run: |
+          cd native/linux
+          mkdir -p build
+          cd build
+          cmake ..
+          cmake --build . --config Release
+          cd ../../..
+        working-directory: universal_remote_control
+      
+      - name: 复制原生库到项目根目录
+        run: |
+          if [ -f "native/linux/build/libinput_simulator_linux.so" ]; then
+            cp native/linux/build/libinput_simulator_linux.so .
+            echo "已复制 libinput_simulator_linux.so"
+          else
+            echo "警告: 未找到 libinput_simulator_linux.so"
+          fi
+        working-directory: universal_remote_control
+      
+      - name: 构建Linux应用
+        run: flutter build linux --release
+        working-directory: universal_remote_control
+      
+      - name: 创建发布包
+        run: |
+          mkdir -p release_linux
+          cp -r build/linux/x64/release/bundle/* release_linux/
+          [ -f README.md ] && cp README.md release_linux/
+          [ -f QUICKSTART.md ] && cp QUICKSTART.md release_linux/
+          echo "发布包创建完成: release_linux"
+        working-directory: universal_remote_control
+      
+      - name: 上传构建产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-build
+          path: universal_remote_control/release_linux/
+          retention-days: 7
 
-  # macOS构建
   build-macos:
     runs-on: macos-latest
+    timeout-minutes: 60
     
     steps:
-    - name: 检出代码
-      uses: actions/checkout@v4
-    
-    - name: 设置Flutter
-      uses: subosito/flutter-action@v2
-      with:
-        flutter-version: '3.16.0'
-        channel: 'stable'
-    
-    - name: Flutter版本检查
-      run: flutter --version
-    
-    - name: 安装依赖
-      run: flutter pub get
-    
-    - name: 生成代码
-      run: flutter pub run build_runner build --delete-conflicting-outputs
-    
-    - name: 编译macOS原生库
-      run: |
-        cd native/macos
-        mkdir build
-        cd build
-        cmake ..
-        make -j$(sysctl -n hw.ncpu)
-        cp lib/libinput_simulator_macos.dylib ../../..
-    
-    - name: 构建macOS应用
-      run: flutter build macos --release
-    
-    - name: 创建发布包
-      run: |
-        mkdir release_macos
-        cp -r build/macos/Build/Products/Release/universal_remote_control.app release_macos/
-        cp README.md release_macos/
-        cp QUICKSTART.md release_macos/
-    
-    - name: 上传构建产物
-      uses: actions/upload-artifact@v4
-      with:
-        name: macos-build
-        path: release_macos/
-        retention-days: 7
+      - name: 检出代码
+        uses: actions/checkout@v4
+      
+      - name: 设置Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.16.0'
+          channel: 'stable'
+          cache: true
+      
+      - name: 验证Flutter安装
+        run: |
+          flutter --version
+          flutter doctor -v
+      
+      - name: 添加macOS桌面支持
+        run: flutter create --platforms=macos .
+        working-directory: universal_remote_control
+      
+      - name: 获取依赖
+        run: flutter pub get
+        working-directory: universal_remote_control
+      
+      - name: 运行代码生成
+        run: flutter pub run build_runner build --delete-conflicting-outputs
+        working-directory: universal_remote_control
+      
+      - name: 编译macOS原生库
+        run: |
+          cd native/macos
+          mkdir -p build
+          cd build
+          cmake ..
+          cmake --build . --config Release
+          cd ../../..
+        working-directory: universal_remote_control
+      
+      - name: 复制原生库到项目根目录
+        run: |
+          if [ -f "native/macos/build/libinput_simulator_macos.dylib" ]; then
+            cp native/macos/build/libinput_simulator_macos.dylib .
+            echo "已复制 libinput_simulator_macos.dylib"
+          else
+            echo "警告: 未找到 libinput_simulator_macos.dylib"
+          fi
+        working-directory: universal_remote_control
+      
+      - name: 构建macOS应用
+        run: flutter build macos --release
+        working-directory: universal_remote_control
+      
+      - name: 创建发布包
+        run: |
+          mkdir -p release_macos
+          cp -r build/macos/Build/Products/Release/universal_remote_control.app release_macos/
+          [ -f README.md ] && cp README.md release_macos/
+          [ -f QUICKSTART.md ] && cp QUICKSTART.md release_macos/
+          echo "发布包创建完成: release_macos"
+        working-directory: universal_remote_control
+      
+      - name: 上传构建产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-build
+          path: universal_remote_control/release_macos/
+          retention-days: 7
 
-  # Android构建
   build-android:
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     
     steps:
-    - name: 检出代码
-      uses: actions/checkout@v4
-    
-    - name: 设置Java
-      uses: actions/setup-java@v3
-      with:
-        distribution: 'zulu'
-        java-version: '17'
-    
-    - name: 设置Flutter
-      uses: subosito/flutter-action@v2
-      with:
-        flutter-version: '3.16.0'
-        channel: 'stable'
-    
-    - name: Flutter版本检查
-      run: flutter --version
-    
-    - name: 安装依赖
-      run: flutter pub get
-    
-    - name: 生成代码
-      run: flutter pub run build_runner build --delete-conflicting-outputs
-    
-    - name: 构建Android APK
-      run: flutter build apk --release
-    
-    - name: 构建Android App Bundle
-      run: flutter build appbundle --release
-    
-    - name: 创建发布包
-      run: |
-        mkdir release_android
-        cp build/app/outputs/flutter-apk/app-release.apk release_android/UniversalRemoteControl.apk
-        cp build/app/outputs/bundle/release/app-release.aab release_android/UniversalRemoteControl.aab
-        cp README.md release_android/
-        cp QUICKSTART.md release_android/
-    
-    - name: 上传APK
-      uses: actions/upload-artifact@v4
-      with:
-        name: android-apk
-        path: release_android/UniversalRemoteControl.apk
-        retention-days: 7
-    
-    - name: 上传App Bundle
-      uses: actions/upload-artifact@v4
-      with:
-        name: android-bundle
-        path: release_android/UniversalRemoteControl.aab
-        retention-days: 7
+      - name: 检出代码
+        uses: actions/checkout@v4
+      
+      - name: 设置Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+      
+      - name: 设置Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.16.0'
+          channel: 'stable'
+          cache: true
+      
+      - name: 验证Flutter安装
+        run: |
+          flutter --version
+          flutter doctor -v
+      
+      - name: 获取依赖
+        run: flutter pub get
+        working-directory: universal_remote_control
+      
+      - name: 运行代码生成
+        run: flutter pub run build_runner build --delete-conflicting-outputs
+        working-directory: universal_remote_control
+      
+      - name: 构建APK
+        run: flutter build apk --release
+        working-directory: universal_remote_control
+      
+      - name: 构建App Bundle
+        run: flutter build appbundle --release
+        working-directory: universal_remote_control
+      
+      - name: 重命名APK
+        run: |
+          mkdir -p release_android
+          cp build/app/outputs/flutter-apk/app-release.apk release_android/universal_remote_control.apk
+          echo "APK已创建: release_android/universal_remote_control.apk"
+        working-directory: universal_remote_control
+      
+      - name: 上传APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-apk
+          path: universal_remote_control/release_android/universal_remote_control.apk
+          retention-days: 7
+      
+      - name: 上传App Bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-bundle
+          path: universal_remote_control/build/app/outputs/bundle/release/app-release.aab
+          retention-days: 7
 
-  # 构建摘要
   build-summary:
     needs: [build-windows, build-linux, build-macos, build-android]
     runs-on: ubuntu-latest
+    if: always()
     
     steps:
-    - name: 生成构建摘要
-      run: |
-        echo "## 🎉 构建完成" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "所有平台构建成功！" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "### 📦 可用的构建产物：" >> $GITHUB_STEP_SUMMARY
-        echo "- ✅ Windows (x64)" >> $GITHUB_STEP_SUMMARY
-        echo "- ✅ Linux (x64)" >> $GITHUB_STEP_SUMMARY
-        echo "- ✅ macOS (Universal)" >> $GITHUB_STEP_SUMMARY
-        echo "- ✅ Android (APK + AAB)" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "### 📥 下载方式：" >> $GITHUB_STEP_SUMMARY
-        echo "在Actions页面的Artifacts部分下载对应平台的构建产物" >> $GITHUB_STEP_SUMMARY
-
+      - name: 构建摘要
+        run: |
+          echo "# 构建摘要" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## 构建状态" >> $GITHUB_STEP_SUMMARY
+          echo "- Windows: ${{ needs.build-windows.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Linux: ${{ needs.build-linux.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- macOS: ${{ needs.build-macos.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Android: ${{ needs.build-android.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## 下载构建产物" >> $GITHUB_STEP_SUMMARY
+          echo "请在Actions页面底部的Artifacts部分下载各平台的构建产物。" >> $GITHUB_STEP_SUMMARY
