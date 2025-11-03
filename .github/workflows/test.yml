@@ -60,7 +60,7 @@ jobs:
       run: flutter analyze
     
     - name: 检查格式
-      run: flutter format --set-exit-if-changed .
+      run: dart format --set-exit-if-changed .
 
   # 依赖检查
   dependency-check:

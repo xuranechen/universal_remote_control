@@ -1,0 +1,11 @@
+# Android SDK 路径
+# Windows: sdk.dir=C:\\Users\\YourName\\AppData\\Local\\Android\\sdk
+# macOS/Linux: sdk.dir=/Users/YourName/Library/Android/sdk
+# 或 Linux: sdk.dir=/home/YourName/Android/Sdk
+
+# Flutter SDK 路径（由Flutter自动管理，通常不需要手动设置）
+# flutter.sdk=path/to/flutter
+
+# 如果使用NDK（本项目暂未使用）
+# ndk.dir=path/to/ndk
+

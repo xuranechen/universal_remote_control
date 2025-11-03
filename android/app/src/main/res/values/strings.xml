@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Universal Remote Control</string>
+    <string name="accessibility_service_description">允许Universal Remote Control模拟触摸和键盘输入</string>
+</resources>
+
