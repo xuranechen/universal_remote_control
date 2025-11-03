@@ -63,6 +63,7 @@ flutter {
 }
 
 dependencies {
-    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
+    // Kotlin 1.8+ 不再需要单独的 jdk7/jdk8 库，功能已合并到主库
+    implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
 }
 

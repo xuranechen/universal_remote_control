@@ -57,33 +57,30 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
-  
-  assets:
-    - assets/icon/
 
-# 应用图标配置
-flutter_launcher_icons:
-  android: true
-  ios: true
-  image_path: "assets/icon/app_icon.png"
-  
-  # Android自适应图标
-  adaptive_icon_background: "#2196F3"
-  adaptive_icon_foreground: "assets/icon/app_icon_foreground.png"
-  
-  # Windows图标
-  windows:
-    generate: true
-    image_path: "assets/icon/app_icon.png"
-    icon_size: 256
-  
-  # macOS图标
-  macos:
-    generate: true
-    image_path: "assets/icon/app_icon.png"
-  
-  # Linux图标  
-  linux:
-    generate: true
-    image_path: "assets/icon/app_icon.png"
+# 应用图标配置（暂时禁用，需要时请创建 assets/icon/ 目录并添加图标文件）
+# flutter_launcher_icons:
+#   android: true
+#   ios: true
+#   image_path: "assets/icon/app_icon.png"
+#   
+#   # Android自适应图标
+#   adaptive_icon_background: "#2196F3"
+#   adaptive_icon_foreground: "assets/icon/app_icon_foreground.png"
+#   
+#   # Windows图标
+#   windows:
+#     generate: true
+#     image_path: "assets/icon/app_icon.png"
+#     icon_size: 256
+#   
+#   # macOS图标
+#   macos:
+#     generate: true
+#     image_path: "assets/icon/app_icon.png"
+#   
+#   # Linux图标  
+#   linux:
+#     generate: true
+#     image_path: "assets/icon/app_icon.png"
 
