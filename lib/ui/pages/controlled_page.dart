@@ -6,9 +6,11 @@ import '../../models/device_info.dart';
 import '../../models/connection_state.dart' as remote;
 import '../../services/websocket_service.dart';
 import '../../services/input_simulator_service.dart';
+import '../../core/device_discovery.dart';
 import '../../utils/qr_code_helper.dart';
 import '../../utils/responsive_helper.dart';
 import '../../utils/animations.dart';
+import '../../utils/platform_helper.dart';
 
 /// 被控端页面
 class ControlledPage extends StatefulWidget {
@@ -46,8 +48,9 @@ class _ControlledPageState extends State<ControlledPage> {
   Future<void> _initializeServer() async {
     try {
       // 获取本地IP
-      final networkInfo = NetworkInfo();
-      _localIp = await networkInfo.getWifiIP();
+      _localIp = await PlatformHelper.getLocalIP();
+      setState(() {});
+      _generateQRCode();
 
       // 初始化输入模拟器
       final simulator = context.read<InputSimulatorService>();
@@ -78,8 +81,11 @@ class _ControlledPageState extends State<ControlledPage> {
         _isServerRunning = true;
       });
 
-      // 生成二维码数据
-      _generateQRCode();
+      // 启动设备发现广播（使本设备可被发现）
+      final discovery = context.read<DeviceDiscovery>();
+      await discovery.start(widget.localDevice);
+
+      // 服务器启动后，状态会更新，二维码已在获取IP后生成
     } catch (e) {
       print('初始化服务器失败: $e');
       _showError('初始化失败: $e');
@@ -89,6 +95,12 @@ class _ControlledPageState extends State<ControlledPage> {
   /// 停止服务器
   Future<void> _stopServer() async {
     try {
+      // 停止设备发现广播
+      try {
+        final discovery = context.read<DeviceDiscovery>();
+        discovery.stop();
+      } catch (_) {}
+
       final wsService = context.read<WebSocketService>();
       await wsService.disconnect();
       setState(() {

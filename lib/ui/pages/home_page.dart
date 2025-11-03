@@ -353,38 +353,62 @@ class _HomePageState extends State<HomePage> {
 
   /// 构建模式选择
   Widget _buildModeSelection(BuildContext context, {required bool isVertical}) {
-    final children = [
-      Expanded(
-        child: _buildEnhancedModeCard(
-          context,
-          icon: Icons.gamepad_outlined,
-          title: '控制端模式',
-          description: '使用此设备控制其他设备',
-          gradient: [Colors.blue.shade400, Colors.blue.shade600],
-          onTap: () => _enterControllerMode(context),
+    if (isVertical) {
+      // 竖屏下在可滚动的 Column 中，不使用 Expanded，避免无限高度约束问题
+      return Container(
+        constraints: const BoxConstraints(maxWidth: 800),
+        child: Column(
+          children: [
+            _buildEnhancedModeCard(
+              context,
+              icon: Icons.gamepad_outlined,
+              title: '控制端模式',
+              description: '使用此设备控制其他设备',
+              gradient: [Colors.blue.shade400, Colors.blue.shade600],
+              onTap: () => _enterControllerMode(context),
+            ),
+            const SizedBox(height: 20),
+            _buildEnhancedModeCard(
+              context,
+              icon: Icons.desktop_windows_outlined,
+              title: '被控端模式',
+              description: '允许其他设备控制此设备',
+              gradient: [Colors.green.shade400, Colors.green.shade600],
+              onTap: () => _enterControlledMode(context),
+            ),
+          ],
         ),
-      ),
-      SizedBox(
-        width: isVertical ? 0 : 20,
-        height: isVertical ? 20 : 0,
-      ),
-      Expanded(
-        child: _buildEnhancedModeCard(
-          context,
-          icon: Icons.desktop_windows_outlined,
-          title: '被控端模式',
-          description: '允许其他设备控制此设备',
-          gradient: [Colors.green.shade400, Colors.green.shade600],
-          onTap: () => _enterControlledMode(context),
-        ),
-      ),
-    ];
+      );
+    }
 
+    // 横向布局时使用 Expanded 平分宽度
     return Container(
       constraints: const BoxConstraints(maxWidth: 800),
-      child: isVertical
-          ? Column(children: children)
-          : Row(children: children),
+      child: Row(
+        children: [
+          Expanded(
+            child: _buildEnhancedModeCard(
+              context,
+              icon: Icons.gamepad_outlined,
+              title: '控制端模式',
+              description: '使用此设备控制其他设备',
+              gradient: [Colors.blue.shade400, Colors.blue.shade600],
+              onTap: () => _enterControllerMode(context),
+            ),
+          ),
+          const SizedBox(width: 20),
+          Expanded(
+            child: _buildEnhancedModeCard(
+              context,
+              icon: Icons.desktop_windows_outlined,
+              title: '被控端模式',
+              description: '允许其他设备控制此设备',
+              gradient: [Colors.green.shade400, Colors.green.shade600],
+              onTap: () => _enterControlledMode(context),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
