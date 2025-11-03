@@ -1,0 +1,60 @@
+name: universal_remote_control
+description: 跨平台通用远程控制系统 - 支持任意设备作为控制端或被控端
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  
+  # UI 相关
+  cupertino_icons: ^1.0.6
+  
+  # 网络通信
+  web_socket_channel: ^2.4.0
+  http: ^1.1.0
+  
+  # 传感器（陀螺仪等）
+  sensors_plus: ^4.0.2
+  
+  # 设备信息
+  device_info_plus: ^9.1.1
+  
+  # 网络信息
+  network_info_plus: ^5.0.1
+  
+  # 权限管理
+  permission_handler: ^11.1.0
+  
+  # FFI（调用原生C++库）
+  ffi: ^2.1.0
+  
+  # 数据持久化
+  shared_preferences: ^2.2.2
+  
+  # JSON 序列化
+  json_annotation: ^4.8.1
+  
+  # 状态管理
+  provider: ^6.1.1
+  
+  # 日志
+  logger: ^2.0.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+  build_runner: ^2.4.7
+  json_serializable: ^6.7.1
+
+flutter:
+  uses-material-design: true
+  
+  # 如果有资源文件
+  # assets:
+  #   - assets/images/
+  #   - assets/icons/
+
