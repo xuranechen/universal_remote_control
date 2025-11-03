@@ -5,6 +5,7 @@ import '../../models/connection_state.dart' as remote;
 import '../../services/websocket_service.dart';
 import '../../services/input_capture_service.dart';
 import '../../utils/responsive_helper.dart';
+import '../../utils/animations.dart';
 import '../widgets/virtual_touchpad.dart';
 import '../widgets/gyro_controller.dart';
 import '../widgets/virtual_keyboard.dart';
@@ -108,35 +109,6 @@ class _ControllerPageState extends State<ControllerPage> {
         backgroundColor: Colors.red,
       ),
     );
-  }
-
-  /// 连接到设备
-  void _connectToDevice() async {
-    try {
-      setState(() {
-        _connectionState = remote.ConnectionState(
-          status: remote.RemoteConnectionStatus.connecting,
-          errorMessage: null,
-        );
-      });
-
-      final websocket = context.read<WebSocketService>();
-      await websocket.connectToDevice(widget.targetDevice.ip, widget.targetDevice.port);
-    } catch (e) {
-      setState(() {
-        _connectionState = remote.ConnectionState(
-          status: remote.RemoteConnectionStatus.error,
-          errorMessage: e.toString(),
-        );
-      });
-    }
-  }
-
-  /// 断开连接
-  void _disconnect() {
-    final websocket = context.read<WebSocketService>();
-    websocket.stopClient();
-    Navigator.pop(context);
   }
 
   @override

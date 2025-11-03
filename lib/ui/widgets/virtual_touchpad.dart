@@ -161,7 +161,7 @@ class _VirtualTouchpadState extends State<VirtualTouchpad> {
               Expanded(
                 child: _buildButton(
                   context,
-                  icon: Icons.scroll,
+                  icon: Icons.mouse,
                   label: '滚轮',
                   onTap: _toggleScrollMode,
                   isActive: _isScrollMode,
