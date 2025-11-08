@@ -3,7 +3,9 @@ import 'dart:io';
 import 'package:logger/logger.dart';
 import '../models/control_event.dart';
 import 'platform_input_service.dart';
-import 'windows_input_service.dart';
+// 条件导入：只在Windows平台导入win32实现
+import 'windows_input_service_stub.dart'
+    if (dart.library.io) 'windows_input_service.dart';
 
 /// 输入模拟服务（调用原生库）
 class InputSimulatorService {

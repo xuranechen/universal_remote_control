@@ -1,4 +1,6 @@
+import 'dart:ffi';
 import 'dart:io';
+import 'package:ffi/ffi.dart';
 import 'package:logger/logger.dart';
 import 'package:win32/win32.dart';
 import '../models/control_event.dart';
