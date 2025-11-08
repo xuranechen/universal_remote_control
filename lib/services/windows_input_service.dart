@@ -39,10 +39,10 @@ class WindowsInputService {
     final dy = (event.data['dy'] as num).toInt();
 
     final input = calloc<INPUT>();
-    input.ref.type = INPUT_TYPE.INPUT_MOUSE;
+    input.ref.type = INPUT_MOUSE;
     input.ref.mi.dx = dx;
     input.ref.mi.dy = dy;
-    input.ref.mi.dwFlags = MOUSE_EVENT_FLAGS.MOUSEEVENTF_MOVE;
+    input.ref.mi.dwFlags = MOUSEEVENTF_MOVE;
 
     SendInput(1, input, sizeOf<INPUT>());
     free(input);
@@ -57,16 +57,16 @@ class WindowsInputService {
 
     switch (buttonName) {
       case 'left':
-        downFlag = MOUSE_EVENT_FLAGS.MOUSEEVENTF_LEFTDOWN;
-        upFlag = MOUSE_EVENT_FLAGS.MOUSEEVENTF_LEFTUP;
+        downFlag = MOUSEEVENTF_LEFTDOWN;
+        upFlag = MOUSEEVENTF_LEFTUP;
         break;
       case 'right':
-        downFlag = MOUSE_EVENT_FLAGS.MOUSEEVENTF_RIGHTDOWN;
-        upFlag = MOUSE_EVENT_FLAGS.MOUSEEVENTF_RIGHTUP;
+        downFlag = MOUSEEVENTF_RIGHTDOWN;
+        upFlag = MOUSEEVENTF_RIGHTUP;
         break;
       case 'middle':
-        downFlag = MOUSE_EVENT_FLAGS.MOUSEEVENTF_MIDDLEDOWN;
-        upFlag = MOUSE_EVENT_FLAGS.MOUSEEVENTF_MIDDLEUP;
+        downFlag = MOUSEEVENTF_MIDDLEDOWN;
+        upFlag = MOUSEEVENTF_MIDDLEUP;
         break;
       default:
         return;
@@ -75,11 +75,11 @@ class WindowsInputService {
     final inputs = calloc<INPUT>(2);
 
     // 按下
-    inputs[0].type = INPUT_TYPE.INPUT_MOUSE;
+    inputs[0].type = INPUT_MOUSE;
     inputs[0].mi.dwFlags = downFlag;
 
     // 释放
-    inputs[1].type = INPUT_TYPE.INPUT_MOUSE;
+    inputs[1].type = INPUT_MOUSE;
     inputs[1].mi.dwFlags = upFlag;
 
     SendInput(2, inputs, sizeOf<INPUT>());
@@ -95,9 +95,9 @@ class WindowsInputService {
 
     if (dy != 0) {
       final input = calloc<INPUT>();
-      input.ref.type = INPUT_TYPE.INPUT_MOUSE;
-      input.ref.mi.dwFlags = MOUSE_EVENT_FLAGS.MOUSEEVENTF_WHEEL;
-      input.ref.mi.mouseData = dy * WHEEL_DELTA;
+      input.ref.type = INPUT_MOUSE;
+      input.ref.mi.dwFlags = MOUSEEVENTF_WHEEL;
+      input.ref.mi.mouseData = (dy * 120).toInt();
 
       SendInput(1, input, sizeOf<INPUT>());
       free(input);
@@ -105,9 +105,9 @@ class WindowsInputService {
 
     if (dx != 0) {
       final input = calloc<INPUT>();
-      input.ref.type = INPUT_TYPE.INPUT_MOUSE;
-      input.ref.mi.dwFlags = MOUSE_EVENT_FLAGS.MOUSEEVENTF_HWHEEL;
-      input.ref.mi.mouseData = dx * WHEEL_DELTA;
+      input.ref.type = INPUT_MOUSE;
+      input.ref.mi.dwFlags = MOUSEEVENTF_HWHEEL;
+      input.ref.mi.mouseData = (dx * 120).toInt();
 
       SendInput(1, input, sizeOf<INPUT>());
       free(input);
@@ -146,9 +146,9 @@ class WindowsInputService {
   /// 按键操作
   void _pressKey(int keyCode, {required bool down}) {
     final input = calloc<INPUT>();
-    input.ref.type = INPUT_TYPE.INPUT_KEYBOARD;
+    input.ref.type = INPUT_KEYBOARD;
     input.ref.ki.wVk = keyCode;
-    input.ref.ki.dwFlags = down ? 0 : KEYBD_EVENT_FLAGS.KEYEVENTF_KEYUP;
+    input.ref.ki.dwFlags = down ? 0 : KEYEVENTF_KEYUP;
 
     SendInput(1, input, sizeOf<INPUT>());
     free(input);
@@ -170,41 +170,41 @@ class WindowsInputService {
 
     // 特殊键映射
     const keyMap = {
-      'SPACE': VIRTUAL_KEY.VK_SPACE,
-      'ENTER': VIRTUAL_KEY.VK_RETURN,
-      'RETURN': VIRTUAL_KEY.VK_RETURN,
-      'ESC': VIRTUAL_KEY.VK_ESCAPE,
-      'ESCAPE': VIRTUAL_KEY.VK_ESCAPE,
-      'TAB': VIRTUAL_KEY.VK_TAB,
-      'BACKSPACE': VIRTUAL_KEY.VK_BACK,
-      'DELETE': VIRTUAL_KEY.VK_DELETE,
-      'INSERT': VIRTUAL_KEY.VK_INSERT,
-      'HOME': VIRTUAL_KEY.VK_HOME,
-      'END': VIRTUAL_KEY.VK_END,
-      'PAGEUP': VIRTUAL_KEY.VK_PRIOR,
-      'PAGEDOWN': VIRTUAL_KEY.VK_NEXT,
-      'ARROWUP': VIRTUAL_KEY.VK_UP,
-      'ARROWDOWN': VIRTUAL_KEY.VK_DOWN,
-      'ARROWLEFT': VIRTUAL_KEY.VK_LEFT,
-      'ARROWRIGHT': VIRTUAL_KEY.VK_RIGHT,
-      'CONTROL': VIRTUAL_KEY.VK_CONTROL,
-      'SHIFT': VIRTUAL_KEY.VK_SHIFT,
-      'ALT': VIRTUAL_KEY.VK_MENU,
-      'CAPSLOCK': VIRTUAL_KEY.VK_CAPITAL,
-      'F1': VIRTUAL_KEY.VK_F1,
-      'F2': VIRTUAL_KEY.VK_F2,
-      'F3': VIRTUAL_KEY.VK_F3,
-      'F4': VIRTUAL_KEY.VK_F4,
-      'F5': VIRTUAL_KEY.VK_F5,
-      'F6': VIRTUAL_KEY.VK_F6,
-      'F7': VIRTUAL_KEY.VK_F7,
-      'F8': VIRTUAL_KEY.VK_F8,
-      'F9': VIRTUAL_KEY.VK_F9,
-      'F10': VIRTUAL_KEY.VK_F10,
-      'F11': VIRTUAL_KEY.VK_F11,
-      'F12': VIRTUAL_KEY.VK_F12,
+      'SPACE': 0x20,
+      'ENTER': 0x0D,
+      'RETURN': 0x0D,
+      'ESC': 0x1B,
+      'ESCAPE': 0x1B,
+      'TAB': 0x09,
+      'BACKSPACE': 0x08,
+      'DELETE': 0x2E,
+      'INSERT': 0x2D,
+      'HOME': 0x24,
+      'END': 0x23,
+      'PAGEUP': 0x21,
+      'PAGEDOWN': 0x22,
+      'ARROWUP': 0x26,
+      'ARROWDOWN': 0x28,
+      'ARROWLEFT': 0x25,
+      'ARROWRIGHT': 0x27,
+      'CONTROL': 0x11,
+      'SHIFT': 0x10,
+      'ALT': 0x12,
+      'CAPSLOCK': 0x14,
+      'F1': 0x70,
+      'F2': 0x71,
+      'F3': 0x72,
+      'F4': 0x73,
+      'F5': 0x74,
+      'F6': 0x75,
+      'F7': 0x76,
+      'F8': 0x77,
+      'F9': 0x78,
+      'F10': 0x79,
+      'F11': 0x7A,
+      'F12': 0x7B,
     };
 
-    return keyMap[keyUpper] ?? VIRTUAL_KEY.VK_A;
+    return keyMap[keyUpper] ?? 0x41; // 默认返回'A'
   }
 }
