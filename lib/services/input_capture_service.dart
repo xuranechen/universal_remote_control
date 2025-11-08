@@ -55,16 +55,19 @@ class InputCaptureService {
 
   /// 开始陀螺仪捕获
   void _startGyroCapture() {
-    _gyroSubscription = gyroscopeEventStream().listen(
-      (GyroscopeEvent event) {
-        _handleGyroEvent(event);
-      },
-      onError: (error) {
-        _logger.e('陀螺仪错误: $error');
-      },
-    );
-
-    _logger.i('陀螺仪捕获已启动');
+    try {
+      _gyroSubscription = gyroscopeEvents.listen(
+        (GyroscopeEvent event) {
+          _handleGyroEvent(event);
+        },
+        onError: (error) {
+          _logger.e('陀螺仪错误: $error');
+        },
+      );
+      _logger.i('陀螺仪捕获已启动');
+    } catch (e) {
+      _logger.e('启动陀螺仪失败: $e');
+    }
   }
 
   /// 处理陀螺仪事件
@@ -204,4 +207,3 @@ class InputCaptureService {
     _eventController.close();
   }
 }
-

@@ -27,6 +27,8 @@ class _VirtualTouchpadState extends State<VirtualTouchpad> {
   bool _isTwoFingerMode = false;
   int _tapCount = 0;
   DateTime? _lastTapTime;
+  DateTime? _lastClickTime;
+  static const _clickDebounceMs = 300;
 
   @override
   Widget build(BuildContext context) {
@@ -208,9 +210,16 @@ class _VirtualTouchpadState extends State<VirtualTouchpad> {
   
   // 处理点击事件
   void _handleTap(MouseButton button) {
+    final now = DateTime.now();
+    if (_lastClickTime != null && 
+        now.difference(_lastClickTime!).inMilliseconds < _clickDebounceMs) {
+      return;
+    }
+    _lastClickTime = now;
+    
     final inputCapture = context.read<InputCaptureService>();
     inputCapture.sendMouseClick(button: button, state: KeyState.press);
-    widget.onTap(); // 保持兼容性
+    widget.onTap();
   }
   
   // 切换滚轮模式
@@ -237,4 +246,3 @@ class _VirtualTouchpadState extends State<VirtualTouchpad> {
     }
   }
 }
-
