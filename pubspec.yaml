@@ -31,6 +31,9 @@ dependencies:
   # FFI（调用原生C++库）
   ffi: ^2.1.0
   
+  # Windows API
+  win32: ^5.1.0
+  
   # 数据持久化
   shared_preferences: ^2.2.2
   
@@ -83,4 +86,3 @@ flutter:
 #   linux:
 #     generate: true
 #     image_path: "assets/icon/app_icon.png"
-

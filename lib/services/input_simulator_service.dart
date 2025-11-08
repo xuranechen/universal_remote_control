@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:logger/logger.dart';
 import '../models/control_event.dart';
 import 'platform_input_service.dart';
+import 'windows_input_service.dart';
 
 /// 输入模拟服务（调用原生库）
 class InputSimulatorService {
@@ -10,6 +11,7 @@ class InputSimulatorService {
   
   ffi.DynamicLibrary? _nativeLib;
   PlatformInputService? _platformService;
+  WindowsInputService? _windowsService;
   bool _isInitialized = false;
 
   // FFI 函数指针（稍后绑定）
@@ -31,8 +33,12 @@ class InputSimulatorService {
         _platformService = PlatformInputService();
         await _platformService!.initialize();
         _logger.i('移动平台输入服务已初始化');
+      } else if (Platform.isWindows) {
+        // Windows使用win32包直接调用API
+        _windowsService = WindowsInputService();
+        _logger.i('Windows输入服务已初始化（使用win32包）');
       } else {
-        // 桌面平台加载动态库
+        // 其他桌面平台加载动态库
         await _initializeDesktopLibrary();
       }
       
@@ -41,7 +47,6 @@ class InputSimulatorService {
     } catch (e) {
       _logger.e('初始化输入模拟服务失败: $e');
       _logger.w('将使用降级方案');
-      // 可以在这里实现降级方案，比如使用命令行工具
     }
   }
 
@@ -136,8 +141,11 @@ class InputSimulatorService {
       if (_platformService != null) {
         // 使用平台特定服务（Android/iOS）
         await _platformService!.handleEvent(event);
+      } else if (_windowsService != null) {
+        // 使用Windows服务
+        await _windowsService!.handleEvent(event);
       } else {
-        // 使用原生库（桌面平台）
+        // 使用原生库（其他桌面平台）
         switch (event.subtype) {
           case EventSubtype.mouseMove:
             _handleMouseMove(event);
@@ -268,4 +276,3 @@ class InputSimulatorService {
     _isInitialized = false;
   }
 }
-
