@@ -24,6 +24,8 @@ enum EventSubtype {
   touch,
   @JsonValue('gyro')
   gyro,
+  @JsonValue('text')
+  text,
   @JsonValue('command')
   command,
 }
@@ -170,6 +172,20 @@ class ControlEvent {
         'pitch': pitch,
         'yaw': yaw,
         'roll': roll,
+      },
+    );
+  }
+
+  /// 创建文本事件（用于剪贴板粘贴）
+  factory ControlEvent.text({
+    required String text,
+  }) {
+    return ControlEvent(
+      type: EventType.event,
+      subtype: EventSubtype.text,
+      timestamp: DateTime.now().millisecondsSinceEpoch,
+      data: {
+        'text': text,
       },
     );
   }

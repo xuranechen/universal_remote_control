@@ -1,6 +1,7 @@
 import 'dart:ffi';
 import 'dart:io';
 import 'package:ffi/ffi.dart';
+import 'package:flutter/services.dart';
 import 'package:logger/logger.dart';
 import 'package:win32/win32.dart';
 import '../models/control_event.dart';
@@ -14,6 +15,11 @@ class WindowsInputService {
   int _currentY = 0;
   int _screenWidth = 0;
   int _screenHeight = 0;
+  
+  // 防重复点击机制
+  DateTime? _lastClickTime;
+  String? _lastClickButton;
+  static const _clickDebounceMs = 300;
   
   WindowsInputService() {
     _updateScreenSize();
@@ -52,6 +58,9 @@ class WindowsInputService {
           break;
         case EventSubtype.keyboard:
           _handleKeyboard(event);
+          break;
+        case EventSubtype.text:
+          await _handleText(event);
           break;
         default:
           _logger.w('未处理的事件类型: ${event.subtype.name}');
@@ -105,6 +114,19 @@ class WindowsInputService {
   /// 处理鼠标点击
   void _handleMouseClick(ControlEvent event) {
     final buttonName = event.data['button'] as String;
+    final now = DateTime.now();
+    
+    // 防重复点击：检查是否在防抖时间内且是相同按钮
+    if (_lastClickTime != null && 
+        _lastClickButton == buttonName &&
+        now.difference(_lastClickTime!).inMilliseconds < _clickDebounceMs) {
+      _logger.d('鼠标点击被防抖过滤: button=$buttonName');
+      return;
+    }
+    
+    _lastClickTime = now;
+    _lastClickButton = buttonName;
+    
     int downFlag, upFlag;
 
     switch (buttonName) {
@@ -258,5 +280,31 @@ class WindowsInputService {
     };
 
     return keyMap[keyUpper] ?? 0x41; // 默认返回'A'
+  }
+
+  /// 处理文本输入（使用剪贴板粘贴）
+  Future<void> _handleText(ControlEvent event) async {
+    final text = event.data['text'] as String;
+    
+    try {
+      // 将文本复制到剪贴板
+      await Clipboard.setData(ClipboardData(text: text));
+      
+      // 等待一小段时间确保剪贴板已更新
+      await Future.delayed(const Duration(milliseconds: 50));
+      
+      // 发送 Ctrl+V 粘贴
+      // 按下 Ctrl
+      _pressKey(VK_CONTROL, down: true);
+      // 按下 V
+      _pressKey(0x56, down: true); // V key
+      _pressKey(0x56, down: false);
+      // 释放 Ctrl
+      _pressKey(VK_CONTROL, down: false);
+      
+      _logger.d('文本粘贴: length=${text.length}');
+    } catch (e) {
+      _logger.e('文本粘贴失败: $e');
+    }
   }
 }

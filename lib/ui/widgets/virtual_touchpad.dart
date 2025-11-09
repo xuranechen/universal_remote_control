@@ -28,7 +28,8 @@ class _VirtualTouchpadState extends State<VirtualTouchpad> {
   int _tapCount = 0;
   DateTime? _lastTapTime;
   DateTime? _lastClickTime;
-  static const _clickDebounceMs = 300;
+  static const _clickDebounceMs = 500; // 增加防抖时间到500ms
+  MouseButton? _lastClickButton; // 记录上次点击的按钮
 
   @override
   Widget build(BuildContext context) {
@@ -228,11 +229,14 @@ class _VirtualTouchpadState extends State<VirtualTouchpad> {
   // 处理点击事件
   void _handleTap(MouseButton button) {
     final now = DateTime.now();
+    // 增强防抖机制：检查时间和按钮类型
     if (_lastClickTime != null && 
+        _lastClickButton == button &&
         now.difference(_lastClickTime!).inMilliseconds < _clickDebounceMs) {
-      return;
+      return; // 相同按钮在防抖时间内，忽略
     }
     _lastClickTime = now;
+    _lastClickButton = button;
     
     final inputCapture = context.read<InputCaptureService>();
     inputCapture.sendMouseClick(button: button, state: KeyState.press);
@@ -299,16 +303,15 @@ class _VirtualTouchpadState extends State<VirtualTouchpad> {
     );
   }
   
-  // 发送文本
+  // 发送文本（使用剪贴板粘贴方式）
   void _sendText(String text) {
     final inputCapture = context.read<InputCaptureService>();
-    for (int i = 0; i < text.length; i++) {
-      inputCapture.sendKeyPress(text[i]);
-    }
+    // 使用剪贴板粘贴方式，而不是逐个字符发送
+    inputCapture.sendText(text);
     
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('已发送文本: ${text.length} 个字符'),
+        content: Text('已发送文本: ${text.length} 个字符（使用粘贴方式）'),
         duration: const Duration(seconds: 1),
       ),
     );

@@ -97,6 +97,12 @@ class PlatformInputService {
           });
           break;
           
+        case EventSubtype.text:
+          await _channel.invokeMethod('text', {
+            'text': event.data['text'],
+          });
+          break;
+          
         default:
           _logger.w('未处理的Android事件类型: ${event.subtype.name}');
       }

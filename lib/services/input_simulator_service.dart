@@ -1,5 +1,6 @@
 import 'dart:ffi' as ffi;
 import 'dart:io';
+import 'package:flutter/services.dart';
 import 'package:logger/logger.dart';
 import '../models/control_event.dart';
 import 'platform_input_service.dart';
@@ -164,6 +165,9 @@ class InputSimulatorService {
           case EventSubtype.touch:
             _handleTouch(event);
             break;
+          case EventSubtype.text:
+            await _handleText(event);
+            break;
           default:
             _logger.w('未处理的事件类型: ${event.subtype.name}');
         }
@@ -248,6 +252,29 @@ class InputSimulatorService {
     
     // TODO: 实现绝对位置的鼠标移动
     // 这需要原生库支持绝对坐标的鼠标移动
+  }
+
+  /// 处理文本输入（使用剪贴板粘贴）
+  /// 注意：这个方法只用于非Windows和非移动平台
+  /// Windows平台由WindowsInputService处理，移动平台由PlatformInputService处理
+  Future<void> _handleText(ControlEvent event) async {
+    final text = event.data['text'] as String;
+    
+    try {
+      // 将文本复制到剪贴板
+      await Clipboard.setData(ClipboardData(text: text));
+      
+      // 等待一小段时间确保剪贴板已更新
+      await Future.delayed(const Duration(milliseconds: 50));
+      
+      // 发送 Ctrl+V 粘贴
+      // 对于Linux/macOS等平台，需要发送 Ctrl+V 组合键
+      // 这里使用键盘事件模拟 Ctrl+V
+      _logger.d('文本粘贴: length=${text.length} (需要平台特定实现)');
+      // TODO: 实现Linux/macOS平台的Ctrl+V发送
+    } catch (e) {
+      _logger.e('文本粘贴失败: $e');
+    }
   }
 
   /// 将键名转换为键码（简化版）

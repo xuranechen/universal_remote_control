@@ -102,8 +102,8 @@ class InputCaptureService {
     double dx = (yaw + roll) * gyroYawSensitivity;
     double dy = pitch * gyroPitchSensitivity;
 
-    // 如果有移动，转换为鼠标移动事件
-    if (dx.abs() > 0.1 || dy.abs() > 0.1) {
+    // 降低阈值以提高帧率，只要有微小移动就发送事件
+    if (dx.abs() > 0.01 || dy.abs() > 0.01) {
       final controlEvent = ControlEvent.mouseMove(dx: dx, dy: dy);
       _eventController.add(controlEvent);
     }
@@ -200,6 +200,12 @@ class InputCaptureService {
     required String action,
   }) {
     final event = ControlEvent.touch(x: x, y: y, action: action);
+    _eventController.add(event);
+  }
+
+  /// 发送文本（使用剪贴板粘贴方式）
+  void sendText(String text) {
+    final event = ControlEvent.text(text: text);
     _eventController.add(event);
   }
 
