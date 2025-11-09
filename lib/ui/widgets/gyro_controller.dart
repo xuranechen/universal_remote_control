@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:sensors_plus/sensors_plus.dart';
@@ -68,8 +69,9 @@ class _GyroControllerState extends State<GyroController>
     Future.delayed(const Duration(milliseconds: 200), () {
       final events = <GyroscopeEvent>[];
       bool isCompleted = false;
+      StreamSubscription<GyroscopeEvent>? subscription;
       
-      final subscription = gyroscopeEventStream(
+      subscription = gyroscopeEventStream(
         samplingPeriod: const Duration(milliseconds: 16),
       ).listen((event) {
         if (isCompleted) return;
@@ -78,15 +80,15 @@ class _GyroControllerState extends State<GyroController>
         // 收集5个事件后计算平均值
         if (events.length >= 5) {
           isCompleted = true;
-          subscription.cancel();
+          subscription?.cancel();
           
           // 计算平均值
           double avgX = events.map((e) => e.x).reduce((a, b) => a + b) / events.length;
           double avgY = events.map((e) => e.y).reduce((a, b) => a + b) / events.length;
           double avgZ = events.map((e) => e.z).reduce((a, b) => a + b) / events.length;
           
-          // 创建平均事件
-          final avgEvent = GyroscopeEvent(x: avgX, y: avgY, z: avgZ);
+          // 创建平均事件（使用位置参数）
+          final avgEvent = GyroscopeEvent(avgX, avgY, avgZ);
           context.read<InputCaptureService>().resetGyroBaseline(avgEvent);
         }
       });
@@ -95,7 +97,7 @@ class _GyroControllerState extends State<GyroController>
       Future.delayed(const Duration(seconds: 5), () {
         if (!isCompleted && events.isNotEmpty) {
           isCompleted = true;
-          subscription.cancel();
+          subscription?.cancel();
           final firstEvent = events.first;
           context.read<InputCaptureService>().resetGyroBaseline(firstEvent);
         }
