@@ -78,22 +78,27 @@ class InputCaptureService {
 
   /// 处理陀螺仪事件
   void _handleGyroEvent(GyroscopeEvent event) {
-    // event.x: 绕X轴旋转（pitch，俯仰）- 控制上下
-    // event.y: 绕Y轴旋转（yaw，偏航）- 控制左右
-    // event.z: 绕Z轴旋转（roll，翻滚）
+    // event.x: 绕X轴旋转（pitch，俯仰）- 垂直时控制上下
+    // event.y: 绕Y轴旋转（yaw，偏航）- 垂直时控制左右
+    // event.z: 绕Z轴旋转（roll，翻滚）- 水平时控制左右
 
     double pitch = -event.x; // 反转方向
     double yaw = -event.y;   // 反转方向
+    double roll = -event.z;  // 水平放置时的左右旋转
 
     // 应用死区
     if (pitch.abs() < gyroDeadZone) pitch = 0;
     if (yaw.abs() < gyroDeadZone) yaw = 0;
+    if (roll.abs() < gyroDeadZone) roll = 0;
+
+    // 水平放置时，使用 roll 和 pitch 来控制
+    // 垂直放置时，使用 yaw 和 pitch 来控制
+    // 通过组合两者来适应不同的持握方式
+    double dx = (yaw + roll) * gyroYawSensitivity;
+    double dy = pitch * gyroPitchSensitivity;
 
     // 如果有移动，转换为鼠标移动事件
-    if (pitch != 0 || yaw != 0) {
-      double dx = yaw * gyroYawSensitivity;
-      double dy = pitch * gyroPitchSensitivity;
-
+    if (dx.abs() > 0.1 || dy.abs() > 0.1) {
       final controlEvent = ControlEvent.mouseMove(dx: dx, dy: dy);
       _eventController.add(controlEvent);
     }
