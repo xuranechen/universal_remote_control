@@ -455,10 +455,7 @@ class _ControllerPageState extends State<ControllerPage> {
             final inputCapture = context.read<InputCaptureService>();
             inputCapture.sendMouseMove(dx, dy);
           },
-          onTap: () {
-            final inputCapture = context.read<InputCaptureService>();
-            inputCapture.sendMouseClick();
-          },
+          onTap: () {},
         ),
 
         // 陀螺仪模式
@@ -739,4 +736,3 @@ class _ControllerPageState extends State<ControllerPage> {
     );
   }
 }
-

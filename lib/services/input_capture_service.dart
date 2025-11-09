@@ -25,9 +25,15 @@ class InputCaptureService {
 
   /// 开始捕获输入
   void startCapture({bool enableGyro = true}) {
-    if (_isCapturing) {
-      _logger.w('输入捕获已在运行');
+    if (_isCapturing && enableGyro == (_gyroSubscription != null)) {
+      _logger.w('输入捕获已在运行，状态未变化');
       return;
+    }
+
+    // 如果陀螺仪状态需要改变，先停止旧的订阅
+    if (_isCapturing) {
+      _gyroSubscription?.cancel();
+      _gyroSubscription = null;
     }
 
     _isCapturing = true;
@@ -36,7 +42,7 @@ class InputCaptureService {
       _startGyroCapture();
     }
 
-    _logger.i('输入捕获已启动');
+    _logger.i('输入捕获已启动 (陀螺仪: $enableGyro)');
   }
 
   /// 停止捕获输入

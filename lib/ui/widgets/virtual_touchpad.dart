@@ -39,7 +39,6 @@ class _VirtualTouchpadState extends State<VirtualTouchpad> {
           child: GestureDetector(
             onPanStart: (details) {
               _lastPosition = details.localPosition;
-              _isScrollMode = false;
             },
             onPanUpdate: (details) {
               if (_lastPosition != null) {
@@ -58,7 +57,6 @@ class _VirtualTouchpadState extends State<VirtualTouchpad> {
             },
             onPanEnd: (details) {
               _lastPosition = null;
-              _isScrollMode = false;
             },
             onTap: () => _handleTap(MouseButton.left),
             onSecondaryTap: () => _handleTap(MouseButton.right),
@@ -219,7 +217,6 @@ class _VirtualTouchpadState extends State<VirtualTouchpad> {
     
     final inputCapture = context.read<InputCaptureService>();
     inputCapture.sendMouseClick(button: button, state: KeyState.press);
-    widget.onTap();
   }
   
   // 切换滚轮模式
