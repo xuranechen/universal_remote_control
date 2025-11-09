@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
 import 'dart:collection';
 
-/// 日志输出类
-class LogOutput extends LogOutput {
-  static final LogOutput _instance = LogOutput._internal();
-  factory LogOutput() => _instance;
-  LogOutput._internal();
+/// 内存日志输出类
+class MemoryLogOutput extends LogOutput {
+  static final MemoryLogOutput _instance = MemoryLogOutput._internal();
+  factory MemoryLogOutput() => _instance;
+  MemoryLogOutput._internal();
 
   final Queue<String> _logs = Queue();
   final int _maxLogs = 500;
@@ -24,6 +24,8 @@ class LogOutput extends LogOutput {
   List<String> getLogs() => _logs.toList();
   void clear() => _logs.clear();
 }
+
+final memoryLogOutput = MemoryLogOutput();
 
 /// 调试日志页面
 class DebugLogPage extends StatefulWidget {
@@ -72,7 +74,7 @@ class _DebugLogPageState extends State<DebugLogPage> {
             icon: const Icon(Icons.delete_outline),
             onPressed: () {
               setState(() {
-                LogOutput().clear();
+                memoryLogOutput.clear();
               });
             },
             tooltip: '清空日志',
@@ -82,7 +84,7 @@ class _DebugLogPageState extends State<DebugLogPage> {
       body: StreamBuilder(
         stream: Stream.periodic(const Duration(milliseconds: 500)),
         builder: (context, snapshot) {
-          final logs = LogOutput().getLogs();
+          final logs = memoryLogOutput.getLogs();
           WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
           
           return ListView.builder(
