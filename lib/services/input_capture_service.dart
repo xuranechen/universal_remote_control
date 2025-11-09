@@ -27,6 +27,11 @@ class InputCaptureService {
   double _baselinePitch = 0.0;
   double _baselineYaw = 0.0;
   double _baselineRoll = 0.0;
+  
+  // 累积过滤：用于过滤静止状态下的微小漂移
+  double _accumulatedDx = 0.0;
+  double _accumulatedDy = 0.0;
+  static const _accumulationThreshold = 0.5; // 累积阈值，只有累积超过这个值才发送
 
   /// 开始捕获输入
   void startCapture({bool enableGyro = true}) {
@@ -87,9 +92,11 @@ class InputCaptureService {
     // event.y: 绕Y轴旋转（yaw，偏航）- 垂直时控制左右
     // event.z: 绕Z轴旋转（roll，翻滚）- 水平时控制左右
 
-    double pitch = -event.x - _baselinePitch; // 反转方向并减去基准
-    double yaw = -event.y - _baselineYaw;     // 反转方向并减去基准
-    double roll = -event.z - _baselineRoll;   // 水平放置时的左右旋转并减去基准
+    // 计算相对于基准点的差值，然后反转方向
+    // 这样如果设备静止，差值应该为0
+    double pitch = -(event.x - _baselinePitch);
+    double yaw = -(event.y - _baselineYaw);
+    double roll = -(event.z - _baselineRoll);
 
     // 应用死区
     if (pitch.abs() < gyroDeadZone) pitch = 0;
@@ -102,11 +109,27 @@ class InputCaptureService {
     double dx = (yaw + roll) * gyroYawSensitivity;
     double dy = pitch * gyroPitchSensitivity;
 
-    // 如果有移动，转换为鼠标移动事件
-    // 使用 0.1 阈值以减少噪音和防止卡顿
-    if (dx.abs() > 0.1 || dy.abs() > 0.1) {
-      final controlEvent = ControlEvent.mouseMove(dx: dx, dy: dy);
+    // 累积过滤：累积微小移动，只有累积超过阈值才发送
+    // 这样可以过滤静止状态下的微小漂移
+    _accumulatedDx += dx;
+    _accumulatedDy += dy;
+    
+    // 如果累积值超过阈值，发送移动事件并重置累积
+    if (_accumulatedDx.abs() > _accumulationThreshold || 
+        _accumulatedDy.abs() > _accumulationThreshold) {
+      final controlEvent = ControlEvent.mouseMove(
+        dx: _accumulatedDx, 
+        dy: _accumulatedDy,
+      );
       _eventController.add(controlEvent);
+      
+      // 重置累积值
+      _accumulatedDx = 0.0;
+      _accumulatedDy = 0.0;
+    } else {
+      // 如果累积值很小，衰减累积值（防止无限累积）
+      _accumulatedDx *= 0.8;
+      _accumulatedDy *= 0.8;
     }
   }
 
@@ -225,10 +248,15 @@ class InputCaptureService {
   
   /// 陀螺仪归零
   void resetGyroBaseline(GyroscopeEvent event) {
-    _baselinePitch = -event.x;
-    _baselineYaw = -event.y;
-    _baselineRoll = -event.z;
-    _logger.i('陀螺仪已归零');
+    // 直接存储原始值作为基准点，而不是负值
+    // 这样计算差值时更直观：pitch = -(event.x - _baselinePitch)
+    _baselinePitch = event.x;
+    _baselineYaw = event.y;
+    _baselineRoll = event.z;
+    // 重置累积值，避免归零后立即发送移动
+    _accumulatedDx = 0.0;
+    _accumulatedDy = 0.0;
+    _logger.i('陀螺仪已归零: pitch=$_baselinePitch, yaw=$_baselineYaw, roll=$_baselineRoll');
   }
 
   /// 释放资源

@@ -341,14 +341,55 @@ class _GyroControllerState extends State<GyroController>
   }
   
   void _resetGyroPosition() {
-    gyroscopeEventStream().first.then((event) {
-      context.read<InputCaptureService>().resetGyroBaseline(event);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('陀螺仪已归零'),
-          duration: Duration(seconds: 1),
-        ),
-      );
+    // 使用平均值而不是单个事件，提高稳定性
+    final events = <GyroscopeEvent>[];
+    bool isCompleted = false;
+    StreamSubscription<GyroscopeEvent>? subscription;
+    
+    subscription = gyroscopeEventStream(
+      samplingPeriod: const Duration(milliseconds: 16),
+    ).listen((event) {
+      if (isCompleted) return;
+      
+      events.add(event);
+      // 收集5个事件后计算平均值
+      if (events.length >= 5) {
+        isCompleted = true;
+        subscription?.cancel();
+        
+        // 计算平均值
+        double avgX = events.map((e) => e.x).reduce((a, b) => a + b) / events.length;
+        double avgY = events.map((e) => e.y).reduce((a, b) => a + b) / events.length;
+        double avgZ = events.map((e) => e.z).reduce((a, b) => a + b) / events.length;
+        
+        // 创建平均事件并归零
+        final avgEvent = GyroscopeEvent(avgX, avgY, avgZ);
+        context.read<InputCaptureService>().resetGyroBaseline(avgEvent);
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('陀螺仪已归零'),
+            duration: Duration(seconds: 1),
+          ),
+        );
+      }
+    });
+    
+    // 超时保护：如果1秒内没有收集到足够的事件，使用第一个事件
+    Future.delayed(const Duration(seconds: 1), () {
+      if (!isCompleted && events.isNotEmpty) {
+        isCompleted = true;
+        subscription?.cancel();
+        final firstEvent = events.first;
+        context.read<InputCaptureService>().resetGyroBaseline(firstEvent);
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('陀螺仪已归零'),
+            duration: Duration(seconds: 1),
+          ),
+        );
+      }
     });
   }
   
