@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:sensors_plus/sensors_plus.dart';
 import '../../services/input_capture_service.dart';
 
 /// 陀螺仪控制器组件
@@ -44,6 +45,7 @@ class _GyroControllerState extends State<GyroController>
     
     if (widget.enabled) {
       _animationController.repeat(reverse: true);
+      _autoResetGyro();
     }
   }
   
@@ -53,11 +55,18 @@ class _GyroControllerState extends State<GyroController>
     if (widget.enabled != oldWidget.enabled) {
       if (widget.enabled) {
         _animationController.repeat(reverse: true);
+        _autoResetGyro();
       } else {
         _animationController.stop();
         _animationController.reset();
       }
     }
+  }
+  
+  void _autoResetGyro() {
+    gyroscopeEventStream().first.then((event) {
+      context.read<InputCaptureService>().resetGyroBaseline(event);
+    });
   }
   
   @override
@@ -223,6 +232,17 @@ class _GyroControllerState extends State<GyroController>
               ),
               const SizedBox(width: 12),
               ElevatedButton(
+                onPressed: widget.enabled ? _resetGyroPosition : null,
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Icon(Icons.gps_fixed),
+              ),
+              const SizedBox(width: 12),
+              ElevatedButton(
                 onPressed: _resetToDefaults,
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
@@ -282,6 +302,18 @@ class _GyroControllerState extends State<GyroController>
         ),
       ],
     );
+  }
+  
+  void _resetGyroPosition() {
+    gyroscopeEventStream().first.then((event) {
+      context.read<InputCaptureService>().resetGyroBaseline(event);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('陀螺仪已归零'),
+          duration: Duration(seconds: 1),
+        ),
+      );
+    });
   }
   
   void _resetToDefaults() {

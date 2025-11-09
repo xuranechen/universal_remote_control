@@ -138,33 +138,52 @@ class _VirtualTouchpadState extends State<VirtualTouchpad> {
         // 按钮区域
         Padding(
           padding: const EdgeInsets.all(20),
-          child: Row(
+          child: Column(
             children: [
-              Expanded(
-                child: _buildButton(
-                  context,
-                  icon: Icons.mouse,
-                  label: '左键',
-                  onTap: () => _handleTap(MouseButton.left),
-                ),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildButton(
+                      context,
+                      icon: Icons.mouse,
+                      label: '左键',
+                      onTap: () => _handleTap(MouseButton.left),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _buildButton(
+                      context,
+                      icon: Icons.radio_button_unchecked,
+                      label: '右键',
+                      onTap: () => _handleTap(MouseButton.right),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _buildButton(
+                      context,
+                      icon: Icons.mouse,
+                      label: '滚轮',
+                      onTap: _toggleScrollMode,
+                      isActive: _isScrollMode,
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _buildButton(
-                  context,
-                  icon: Icons.radio_button_unchecked,
-                  label: '右键',
-                  onTap: () => _handleTap(MouseButton.right),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _buildButton(
-                  context,
-                  icon: Icons.mouse,
-                  label: '滚轮',
-                  onTap: _toggleScrollMode,
-                  isActive: _isScrollMode,
+              const SizedBox(height: 8),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: _showTextInput,
+                  icon: const Icon(Icons.text_fields),
+                  label: const Text('文本输入'),
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
                 ),
               ),
             ],
@@ -241,5 +260,57 @@ class _VirtualTouchpadState extends State<VirtualTouchpad> {
       final inputCapture = context.read<InputCaptureService>();
       inputCapture.sendMouseScroll(dx, dy);
     }
+  }
+  
+  // 显示文本输入对话框
+  void _showTextInput() {
+    final textController = TextEditingController();
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('文本输入'),
+        content: TextField(
+          controller: textController,
+          autofocus: true,
+          maxLines: 3,
+          decoration: const InputDecoration(
+            hintText: '输入要发送的文本',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            onPressed: () {
+              final text = textController.text;
+              if (text.isNotEmpty) {
+                _sendText(text);
+                Navigator.pop(context);
+              }
+            },
+            child: const Text('发送'),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  // 发送文本
+  void _sendText(String text) {
+    final inputCapture = context.read<InputCaptureService>();
+    for (int i = 0; i < text.length; i++) {
+      inputCapture.sendKeyPress(text[i]);
+    }
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('已发送文本: ${text.length} 个字符'),
+        duration: const Duration(seconds: 1),
+      ),
+    );
   }
 }

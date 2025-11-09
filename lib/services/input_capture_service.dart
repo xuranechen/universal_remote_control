@@ -22,6 +22,11 @@ class InputCaptureService {
   double gyroPitchSensitivity = 30.0;
   double gyroYawSensitivity = 30.0;
   double gyroDeadZone = 0.05; // 死区，避免抖动
+  
+  // 陀螺仪归零基准点
+  double _baselinePitch = 0.0;
+  double _baselineYaw = 0.0;
+  double _baselineRoll = 0.0;
 
   /// 开始捕获输入
   void startCapture({bool enableGyro = true}) {
@@ -82,9 +87,9 @@ class InputCaptureService {
     // event.y: 绕Y轴旋转（yaw，偏航）- 垂直时控制左右
     // event.z: 绕Z轴旋转（roll，翻滚）- 水平时控制左右
 
-    double pitch = -event.x; // 反转方向
-    double yaw = -event.y;   // 反转方向
-    double roll = -event.z;  // 水平放置时的左右旋转
+    double pitch = -event.x - _baselinePitch; // 反转方向并减去基准
+    double yaw = -event.y - _baselineYaw;     // 反转方向并减去基准
+    double roll = -event.z - _baselineRoll;   // 水平放置时的左右旋转并减去基准
 
     // 应用死区
     if (pitch.abs() < gyroDeadZone) pitch = 0;
@@ -209,6 +214,14 @@ class InputCaptureService {
     if (deadZone != null) gyroDeadZone = deadZone;
     
     _logger.i('陀螺仪灵敏度已更新: pitch=$gyroPitchSensitivity, yaw=$gyroYawSensitivity');
+  }
+  
+  /// 陀螺仪归零
+  void resetGyroBaseline(GyroscopeEvent event) {
+    _baselinePitch = -event.x;
+    _baselineYaw = -event.y;
+    _baselineRoll = -event.z;
+    _logger.i('陀螺仪已归零');
   }
 
   /// 释放资源

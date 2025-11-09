@@ -8,6 +8,34 @@ import '../models/control_event.dart';
 /// Windows输入模拟服务（使用win32包直接调用Windows API）
 class WindowsInputService {
   static final Logger _logger = Logger();
+  
+  // 跟踪当前鼠标位置
+  int _currentX = 0;
+  int _currentY = 0;
+  int _screenWidth = 0;
+  int _screenHeight = 0;
+  
+  WindowsInputService() {
+    _updateScreenSize();
+    _updateMousePosition();
+  }
+  
+  /// 更新屏幕尺寸
+  void _updateScreenSize() {
+    _screenWidth = GetSystemMetrics(SM_CXSCREEN);
+    _screenHeight = GetSystemMetrics(SM_CYSCREEN);
+    _logger.d('屏幕尺寸: ${_screenWidth}x$_screenHeight');
+  }
+  
+  /// 更新当前鼠标位置
+  void _updateMousePosition() {
+    final point = calloc<POINT>();
+    if (GetCursorPos(point) != 0) {
+      _currentX = point.ref.x;
+      _currentY = point.ref.y;
+    }
+    free(point);
+  }
 
   /// 处理控制事件
   Future<void> handleEvent(ControlEvent event) async {
@@ -38,16 +66,40 @@ class WindowsInputService {
     final dx = (event.data['dx'] as num).toInt();
     final dy = (event.data['dy'] as num).toInt();
 
+    // 更新当前位置
+    _updateMousePosition();
+    
+    // 计算新位置
+    int newX = _currentX + dx;
+    int newY = _currentY + dy;
+    
+    // 限制在屏幕范围内
+    newX = newX.clamp(0, _screenWidth - 1);
+    newY = newY.clamp(0, _screenHeight - 1);
+    
+    // 计算实际移动量
+    final actualDx = newX - _currentX;
+    final actualDy = newY - _currentY;
+    
+    // 如果没有实际移动，跳过
+    if (actualDx == 0 && actualDy == 0) {
+      return;
+    }
+
     final input = calloc<INPUT>();
     input.ref.type = INPUT_MOUSE;
-    input.ref.mi.dx = dx;
-    input.ref.mi.dy = dy;
+    input.ref.mi.dx = actualDx;
+    input.ref.mi.dy = actualDy;
     input.ref.mi.dwFlags = MOUSEEVENTF_MOVE;
 
     SendInput(1, input, sizeOf<INPUT>());
     free(input);
+    
+    // 更新跟踪位置
+    _currentX = newX;
+    _currentY = newY;
 
-    _logger.d('鼠标移动: dx=$dx, dy=$dy');
+    _logger.d('鼠标移动: dx=$actualDx, dy=$actualDy (位置: $_currentX, $_currentY)');
   }
 
   /// 处理鼠标点击
