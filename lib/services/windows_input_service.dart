@@ -75,40 +75,25 @@ class WindowsInputService {
     final dx = (event.data['dx'] as num).toInt();
     final dy = (event.data['dy'] as num).toInt();
 
-    // 更新当前位置
-    _updateMousePosition();
-    
-    // 计算新位置
-    int newX = _currentX + dx;
-    int newY = _currentY + dy;
-    
-    // 限制在屏幕范围内
-    newX = newX.clamp(0, _screenWidth - 1);
-    newY = newY.clamp(0, _screenHeight - 1);
-    
-    // 计算实际移动量
-    final actualDx = newX - _currentX;
-    final actualDy = newY - _currentY;
-    
-    // 如果没有实际移动，跳过
-    if (actualDx == 0 && actualDy == 0) {
+    // 如果移动量太小，跳过（减少不必要的系统调用）
+    if (dx.abs() < 1 && dy.abs() < 1) {
       return;
     }
 
+    // 直接使用相对移动，不查询当前位置（提高性能）
+    // 只在初始化时查询一次位置，之后跟踪相对移动
     final input = calloc<INPUT>();
     input.ref.type = INPUT_MOUSE;
-    input.ref.mi.dx = actualDx;
-    input.ref.mi.dy = actualDy;
+    input.ref.mi.dx = dx;
+    input.ref.mi.dy = dy;
     input.ref.mi.dwFlags = MOUSEEVENTF_MOVE;
 
     SendInput(1, input, sizeOf<INPUT>());
     free(input);
     
-    // 更新跟踪位置
-    _currentX = newX;
-    _currentY = newY;
-
-    _logger.d('鼠标移动: dx=$actualDx, dy=$actualDy (位置: $_currentX, $_currentY)');
+    // 更新跟踪位置（用于边界检查，但不频繁查询系统）
+    _currentX = (_currentX + dx).clamp(0, _screenWidth - 1);
+    _currentY = (_currentY + dy).clamp(0, _screenHeight - 1);
   }
 
   /// 处理鼠标点击

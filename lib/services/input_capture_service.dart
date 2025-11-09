@@ -102,8 +102,9 @@ class InputCaptureService {
     double dx = (yaw + roll) * gyroYawSensitivity;
     double dy = pitch * gyroPitchSensitivity;
 
-    // 降低阈值以提高帧率，只要有微小移动就发送事件
-    if (dx.abs() > 0.01 || dy.abs() > 0.01) {
+    // 如果有移动，转换为鼠标移动事件
+    // 使用 0.1 阈值以减少噪音和防止卡顿
+    if (dx.abs() > 0.1 || dy.abs() > 0.1) {
       final controlEvent = ControlEvent.mouseMove(dx: dx, dy: dy);
       _eventController.add(controlEvent);
     }
