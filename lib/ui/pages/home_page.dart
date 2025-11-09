@@ -6,7 +6,6 @@ import '../../utils/responsive_helper.dart';
 import '../../utils/animations.dart';
 import 'controlled_page.dart';
 import 'device_list_page.dart';
-import 'debug_log_page.dart';
 
 /// 主页 - 模式选择
 class HomePage extends StatefulWidget {
@@ -97,21 +96,6 @@ class _HomePageState extends State<HomePage> {
     }
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Universal Remote Control'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.bug_report),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const DebugLogPage()),
-              );
-            },
-            tooltip: '查看日志',
-          ),
-        ],
-      ),
       body: Container(
         decoration: _buildGradientBackground(context),
         child: SafeArea(

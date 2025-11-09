@@ -19,9 +19,9 @@ class InputCaptureService {
   bool _isCapturing = false;
 
   // 陀螺仪灵敏度配置
-  double gyroPitchSensitivity = 10.0;
-  double gyroYawSensitivity = 10.0;
-  double gyroDeadZone = 0.1; // 死区，避免抖动
+  double gyroPitchSensitivity = 30.0;
+  double gyroYawSensitivity = 30.0;
+  double gyroDeadZone = 0.05; // 死区，避免抖动
 
   /// 开始捕获输入
   void startCapture({bool enableGyro = true}) {
@@ -62,7 +62,7 @@ class InputCaptureService {
   /// 开始陀螺仪捕获
   void _startGyroCapture() {
     try {
-      _gyroSubscription = gyroscopeEvents.listen(
+      _gyroSubscription = gyroscopeEventStream(samplingPeriod: const Duration(milliseconds: 16)).listen(
         (GyroscopeEvent event) {
           _handleGyroEvent(event);
         },
@@ -78,13 +78,12 @@ class InputCaptureService {
 
   /// 处理陀螺仪事件
   void _handleGyroEvent(GyroscopeEvent event) {
-    // event.x: 绕X轴旋转（pitch，俯仰）
-    // event.y: 绕Y轴旋转（yaw，偏航）
+    // event.x: 绕X轴旋转（pitch，俯仰）- 控制上下
+    // event.y: 绕Y轴旋转（yaw，偏航）- 控制左右
     // event.z: 绕Z轴旋转（roll，翻滚）
 
-    double pitch = event.x;
-    double yaw = event.y;
-    // double roll = event.z; // 未使用，已移除
+    double pitch = -event.x; // 反转方向
+    double yaw = -event.y;   // 反转方向
 
     // 应用死区
     if (pitch.abs() < gyroDeadZone) pitch = 0;

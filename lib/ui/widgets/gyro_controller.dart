@@ -22,9 +22,9 @@ class _GyroControllerState extends State<GyroController>
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
   
-  double _pitchSensitivity = 10.0;
-  double _yawSensitivity = 10.0;
-  double _deadZone = 0.1;
+  double _pitchSensitivity = 30.0;
+  double _yawSensitivity = 30.0;
+  double _deadZone = 0.05;
   
   @override
   void initState() {
@@ -286,9 +286,9 @@ class _GyroControllerState extends State<GyroController>
   
   void _resetToDefaults() {
     setState(() {
-      _pitchSensitivity = 10.0;
-      _yawSensitivity = 10.0;
-      _deadZone = 0.1;
+      _pitchSensitivity = 30.0;
+      _yawSensitivity = 30.0;
+      _deadZone = 0.05;
     });
     _updateSensitivity();
     
